@@ -4,12 +4,12 @@ const db = require("../db");
 /**
  * API: Thêm hoặc Sửa một BÌNH LUẬN
  */
-module.exports.addOrUpdateReview = async (req, res) => {
+module.exports.addReview = async (req, res) => {
   try {
-    const { movieId, content } = req.body; // Lần này là 'content'
-    const userId = req.user.id; // Lấy từ middleware
+    const { movieId, content } = req.body;
+    const userId = req.user.id;
 
-    // 1. Kiểm tra đầu vào
+    // 1. Kiểm tra đầu vào (Giữ nguyên)
     if (!movieId || !content) {
       return res.status(400).json({ message: "Thiếu movieId hoặc content" });
     }
@@ -17,25 +17,23 @@ module.exports.addOrUpdateReview = async (req, res) => {
       return res.status(400).json({ message: "Bình luận không được để trống" });
     }
 
-    // 2. Thêm hoặc Cập nhật (UPSERT)
-    // Dùng ON CONFLICT trên (user_id, movie_id)
+    // 2. Thay đổi logic: Luôn luôn INSERT (thêm mới)
+    // Đã xóa bỏ "ON CONFLICT"
     const query = {
       text: `INSERT INTO Reviews (user_id, movie_id, content)
              VALUES ($1, $2, $3)
-             ON CONFLICT (user_id, movie_id)
-             DO UPDATE SET content = $3, updated_at = CURRENT_TIMESTAMP
-             RETURNING *`,
+             RETURNING *`, // Vẫn trả về để xác nhận
       values: [userId, movieId, content],
     };
 
     const { rows } = await db.query(query);
 
     res.status(201).json({
-      result: { status: "ok", message: "Bình luận đã được lưu" },
+      result: { status: "ok", message: "Đã đăng bình luận" }, // Đổi thông báo
       data: rows[0],
     });
   } catch (error) {
-    console.error("Lỗi khi thêm/sửa review:", error);
+    console.error("Lỗi khi thêm review:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

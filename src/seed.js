@@ -37,87 +37,78 @@ const seedGenres = async () => {
 
 const getTrailerKey = async (movieId) => {
   try {
-    console.log("Bắt đầu lấy dữ liệu phim (movies)...");
-    let moviesToInsert = [];
-    for (let page = 1; page <= 5; page++) {
-      // Vẫn lấy 100 phim (5 trang)
-      const response = await axios.get(`${TMDB_BASE_URL}/movie/popular`, {
-        params: {
-          api_key: TMDB_API_KEY,
-          language: "en-US",
-          page: page,
-        },
-      });
-      moviesToInsert.push(...response.data.results);
-    }
-
-    console.log(
-      `Lấy được ${moviesToInsert.length} phim. Bắt đầu chèn vào CSDL...`
-    );
-    let insertedMovieCount = 0;
-    let movieIdsToUpdateTrailer = []; // Lưu ID để cập nhật trailer sau
-
-    for (const movie of moviesToInsert) {
-      if (!movie.poster_path || !movie.overview) continue;
-
-      const movieQuery = {
-        text: `INSERT INTO Movies (id, title, summary, poster_url, release_year)
-               VALUES ($1, $2, $3, $4, $5)
-               ON CONFLICT (id) DO NOTHING
-               RETURNING id`, // Bỏ trailer_url khỏi INSERT
-        values: [
-          movie.id,
-          movie.title,
-          movie.overview,
-          `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
-          parseInt(movie.release_date.split("-")[0]) || null,
-        ],
-      };
-
-      const movieRes = await db.query(movieQuery);
-
-      if (movieRes.rowCount > 0) {
-        insertedMovieCount++;
-        const insertedMovieId = movieRes.rows[0].id;
-        movieIdsToUpdateTrailer.push(insertedMovieId); // Thêm ID vào danh sách chờ
-
-        // Chèn vào bảng Movie_Genres (không đổi)
-        for (const genreId of movie.genre_ids) {
-          const genreQuery = {
-            text: `INSERT INTO Movie_Genres (movie_id, genre_id)
-                   VALUES ($1, $2)
-                   ON CONFLICT (movie_id, genre_id) DO NOTHING`,
-            values: [insertedMovieId, genreId],
-          };
-          await db.query(genreQuery);
-        }
+    const response = await axios.get(
+      `${TMDB_BASE_URL}/movie/${movieId}/videos`,
+      {
+        params: { api_key: TMDB_API_KEY, language: "en-US" },
       }
-    }
-    console.log(`Đã chèn thành công ${insertedMovieCount} phim mới.`);
+    );
 
-    // --- Bắt đầu quá trình CẬP NHẬT TRAILER ---
-    console.log(
-      `Bắt đầu cập nhật trailer cho ${movieIdsToUpdateTrailer.length} phim...`
+    const videos = response.data.results;
+    const trailer = videos.find(
+      (video) => video.site === "YouTube" && video.type === "Trailer"
     );
-    let updatedTrailerCount = 0;
-    for (const movieId of movieIdsToUpdateTrailer) {
-      const trailerUrl = await getTrailerKey(movieId);
-      if (trailerUrl) {
-        const updateQuery = {
-          text: `UPDATE Movies SET trailer_url = $1 WHERE id = $2`,
-          values: [trailerUrl, movieId],
-        };
-        await db.query(updateQuery);
-        updatedTrailerCount++;
-      }
-      // Thêm một chút delay để tránh bị TMDB chặn vì gọi API quá nhanh
-      await new Promise((resolve) => setTimeout(resolve, 50));
+
+    if (trailer) {
+      return `https://www.youtube.com/watch?v=${trailer.key}`;
     }
-    console.log(
-      `Đã cập nhật trailer thành công cho ${updatedTrailerCount} phim.`
-    );
+    return null;
   } catch (error) {
-    console.error("Lỗi khi seeding movies:", error.message);
+    console.warn(`Không tìm thấy video cho phim ${movieId}:`, error.message);
+    return null;
+  }
+};
+
+const seedCreditsForMovie = async (movieId) => {
+  try {
+    const response = await axios.get(
+      `${TMDB_BASE_URL}/movie/${movieId}/credits`,
+      {
+        params: { api_key: TMDB_API_KEY, language: "en-US" },
+      }
+    );
+
+    const crew = response.data.crew;
+    const cast = response.data.cast;
+
+    // Insert directors
+    const director = crew.find((person) => person.job === "Director");
+    if (director) {
+      await db.query({
+        text: `INSERT INTO directors (id, name) VALUES ($1, $2)
+               ON CONFLICT (id) DO NOTHING`,
+        values: [director.id, director.name],
+      });
+
+      // insert into Movie_Directors
+      await db.query({
+        text: `INSERT INTO movie_directors (movie_id, director_id) VALUES ($1, $2)
+               ON CONFLICT (movie_id, director_id) DO NOTHING`,
+        values: [movieId, director.id],
+      });
+    }
+
+    // Insert main cast (top 5)
+    const top5Actors = cast.slice(0, 5);
+    for (const actor of top5Actors) {
+      await db.query({
+        text: `INSERT INTO actors (id, name) 
+               VALUES ($1, $2)
+               ON CONFLICT (id) DO NOTHING`,
+        values: [actor.id, actor.name],
+      });
+
+      // insert into Movie_Actors
+      await db.query({
+        text: `INSERT INTO movie_actors (movie_id, actor_id) VALUES ($1, $2)
+               ON CONFLICT (movie_id, actor_id) DO NOTHING`,
+        values: [movieId, actor.id],
+      });
+    }
+    return true;
+  } catch (error) {
+    console.log(`Lỗi khi seeding credits cho phim ${movieId}:`, error.message);
+    return false;
   }
 };
 
@@ -125,8 +116,8 @@ const seedMovies = async () => {
   try {
     console.log("Bắt đầu lấy dữ liệu phim (movies)...");
     let moviesToInsert = [];
-    for (let page = 1; page <= 5; page++) {
-      // Lấy 100 phim (5 trang)
+    for (let page = 1; page <= 25; page++) {
+      // Lấy 500 phim (25 trang)
       const response = await axios.get(`${TMDB_BASE_URL}/movie/popular`, {
         params: {
           api_key: TMDB_API_KEY,
@@ -135,6 +126,8 @@ const seedMovies = async () => {
         },
       });
       moviesToInsert.push(...response.data.results);
+      // Delay nhẹ
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
     console.log(
@@ -145,7 +138,8 @@ const seedMovies = async () => {
     // 1. Chèn phim MỚI (bỏ qua phim cũ)
     // Vẫn giữ logic cũ để thêm phim mới nếu có
     for (const movie of moviesToInsert) {
-      if (!movie.poster_path || !movie.overview) continue;
+      if (!movie.poster_path || !movie.overview || !movie.release_date)
+        continue;
 
       const movieQuery = {
         text: `INSERT INTO Movies (id, title, summary, poster_url, release_year)
@@ -178,39 +172,51 @@ const seedMovies = async () => {
     }
     console.log(`Đã chèn thành công ${insertedMovieCount} phim MỚI.`);
 
-    // --- BẮT ĐẦU QUÁ TRÌNH CẬP NHẬT TRAILER (ĐÃ TỐI ƯU) ---
+    // --- Vòng lặp 2: Cập nhật TRAILER (Tối ưu) ---
     console.log("Đang tìm các phim thiếu trailer để cập nhật...");
-
-    // 2. CHỈ LẤY những phim đang thiếu trailer từ CSDL
-    const { rows: moviesToUpdate } = await db.query(
+    const { rows: moviesToUpdateTrailer } = await db.query(
       "SELECT id FROM Movies WHERE trailer_url IS NULL OR trailer_url = ''"
     );
-
-    if (moviesToUpdate.length === 0) {
-      console.log("Tất cả phim đều đã có trailer. Không cần cập nhật.");
-      // Không cần làm gì thêm, kết thúc phần này
-      return;
-    }
-
-    console.log(`Tìm thấy ${moviesToUpdate.length} phim cần cập nhật trailer.`);
+    console.log(
+      `Tìm thấy ${moviesToUpdateTrailer.length} phim cần cập nhật trailer.`
+    );
     let updatedTrailerCount = 0;
-
-    // 3. CHỈ LẶP QUA những phim thực sự thiếu
-    for (const movie of moviesToUpdate) {
-      const trailerUrl = await getTrailerKey(movie.id); // movie.id từ CSDL
+    for (const movie of moviesToUpdateTrailer) {
+      const trailerUrl = await getTrailerKey(movie.id);
       if (trailerUrl) {
-        const updateQuery = {
+        await db.query({
           text: `UPDATE Movies SET trailer_url = $1 WHERE id = $2`,
           values: [trailerUrl, movie.id],
-        };
-        await db.query(updateQuery);
+        });
         updatedTrailerCount++;
       }
-      // Delay để tránh bị API rate limit
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(
       `Đã cập nhật trailer thành công cho ${updatedTrailerCount} phim.`
+    );
+
+    // --- Vòng lặp 3: Cập nhật CREDITS (Tối ưu) ---
+    console.log("Đang tìm các phim thiếu đạo diễn/diễn viên để cập nhật...");
+    // Lấy ID các phim chưa có trong bảng Movie_Directors
+    const { rows: moviesToUpdateCredits } = await db.query(
+      `SELECT M.id FROM Movies M
+       LEFT JOIN Movie_Directors MD ON M.id = MD.movie_id
+       WHERE MD.movie_id IS NULL`
+    );
+    console.log(
+      `Tìm thấy ${moviesToUpdateCredits.length} phim cần cập nhật credits.`
+    );
+    let updatedCreditsCount = 0;
+    for (const movie of moviesToUpdateCredits) {
+      const success = await seedCreditsForMovie(movie.id);
+      if (success) {
+        updatedCreditsCount++;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    console.log(
+      `Đã cập nhật credits thành công cho ${updatedCreditsCount} phim.`
     );
   } catch (error) {
     console.error("Lỗi khi seeding movies:", error.message);

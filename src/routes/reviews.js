@@ -6,7 +6,7 @@ const { protect } = require("../middleware/authMiddleware"); // Import "người
 
 // POST /api/reviews/
 // Thêm/sửa một bình luận (Cần đăng nhập)
-router.post("/", protect, reviewController.addOrUpdateReview);
+router.post("/", protect, reviewController.addReview);
 
 // GET /api/reviews/movie/:movieId
 // Lấy tất cả bình luận của 1 phim (Không cần đăng nhập)
