@@ -11,6 +11,7 @@ const ratingRoutes = require("./routes/ratings");
 const reviewRoutes = require("./routes/reviews");
 const viewRoutes = require("./routes/views");
 const searchRoutes = require("./routes/search");
+const recommendationRoutes = require("./routes/recommendations");
 
 app.use(express.json());
 
@@ -20,6 +21,7 @@ app.use("/api/ratings", ratingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/views", viewRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Chào mừng đến với CINE Backend!");
