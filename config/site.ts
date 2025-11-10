@@ -1,28 +1,32 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "CINE",
+  description: "Xem phim online miễn phí chất lượng cao",
   navItems: [
     {
-      label: "Home",
-      href: "/",
+      label: "Phim lẻ",
+      href: "/films-single",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "Phim bộ",
+      href: "/films-series",
     },
     {
-      label: "Pricing",
-      href: "/pricing",
+      label: "Thể loại",
+      href: "/genres",
     },
     {
-      label: "Blog",
-      href: "/blog",
+      label: "Quốc gia",
+      href: "/films-by-country",
     },
+    // {
+    //   label: "Xem chung",
+    //   href: "/watch-together",
+    // },
     {
-      label: "About",
-      href: "/about",
+      label: "Diễn viên",
+      href: "/actors",
     },
   ],
   navMenuItems: [

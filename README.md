@@ -1,14 +1,22 @@
-# Next.js & HeroUI Template
+# CINE - Movie Streaming Platform
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+Một nền tảng xem phim online được xây dựng với Next.js 15 và HeroUI v2.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+## ✨ Features
 
-## Technologies Used
+- 🎬 Hero Banner với animated background transitions
+- 🎨 Dark/Light mode với smooth animations
+- 🔍 Search functionality
+- 📱 Fully responsive design
+- 🎭 Movie carousel với thumbnail preview
+- 🔐 Login modal (UI ready)
+- ⚡ Fast page loads với Next.js 15 + Turbopack
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
+## 🛠️ Technologies Used
+
+- [Next.js 15](https://nextjs.org/docs/getting-started)
 - [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
+- [Tailwind CSS v4](https://tailwindcss.com/)
 - [Tailwind Variants](https://tailwind-variants.org)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Framer Motion](https://www.framer.com/motion/)
