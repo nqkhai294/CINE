@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Movie } from "@/types";
 import { GENRE_MAP } from "@/config/constants";
-import { getBackdropUrl, formatYear, formatRating } from "@/lib/utils";
 
 interface MovieHeroProps {
   movies: Movie[];
@@ -20,6 +19,8 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index);
   };
+
+  const getSixNewestMovies = () => {};
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -36,7 +37,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `url(${getBackdropUrl(currentMovie.backdrop_path)})`,
+              backgroundImage: `url(${currentMovie.backdrop_url})`,
             }}
           />
           {/* Gradient Overlays */}
@@ -65,31 +66,30 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Chip
                 color="warning"
-                variant="flat"
                 size="sm"
-                className="font-semibold text-xs"
+                className="font-semibold text-xs rounded-md"
                 startContent={<span className="text-xs mr-1">IMDb</span>}
               >
-                {formatRating(currentMovie.vote_average)}
+                {currentMovie.tmdb_vote_average}
               </Chip>
               <Chip
                 size="sm"
                 variant="bordered"
-                className="text-white border-white/50 text-xs"
+                className="text-white border-white/50 text-xs rounded-md"
               >
                 T18
               </Chip>
               <Chip
                 size="sm"
                 variant="bordered"
-                className="text-white border-white/50 text-xs"
+                className="text-white border-white/50 text-xs rounded-md"
               >
-                {formatYear(currentMovie.release_date)}
+                {currentMovie.release_year}
               </Chip>
               <Chip
                 size="sm"
                 variant="bordered"
-                className="text-white border-white/50 text-xs"
+                className="text-white border-white/50 text-xs rounded-md"
               >
                 1h 48m
               </Chip>
@@ -97,19 +97,19 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
 
             {/* Genre Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
-              {currentMovie.genre_ids.slice(0, 6).map((genreId) => (
+              {currentMovie.genres.map((genre) => (
                 <span
-                  key={genreId}
+                  key={genre}
                   className="px-2 py-0.5 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white"
                 >
-                  {GENRE_MAP[genreId] || "Khác"}
+                  {genre || "Khác"}
                 </span>
               ))}
             </div>
 
             {/* Description */}
             <p className="text-white/90 text-sm md:text-base mb-6 line-clamp-3 max-w-2xl">
-              {currentMovie.overview}
+              {currentMovie.summary}
             </p>
 
             {/* Action Buttons */}
@@ -193,7 +193,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
               whileTap={{ scale: 0.95 }}
             >
               <img
-                src={getBackdropUrl(movie.backdrop_path, "w300")}
+                src={movie.backdrop_url}
                 alt={movie.title}
                 className="w-full h-full object-cover object-center"
               />

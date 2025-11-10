@@ -42,4 +42,3 @@ export const GENRE_MAP: Record<number, string> = {
   10752: "Chiến Tranh",
   37: "Miền Tây",
 };
-

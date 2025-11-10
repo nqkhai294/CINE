@@ -5,7 +5,7 @@ import { Chip } from "@heroui/chip";
 import { Image } from "@heroui/image";
 import { motion } from "framer-motion";
 import { Movie } from "@/types";
-import { getImageUrl, formatYear, formatRating } from "@/lib/utils";
+// import { getImageUrl, formatYear, formatRating } from "@/lib/utils";
 import { GENRE_MAP } from "@/config/constants";
 
 interface MovieHoverCardProps {
@@ -25,7 +25,7 @@ export const MovieHoverCard = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-[320px] z-50 bg-[#1a2332] rounded-lg shadow-2xl border border-gray-700 overflow-hidden"
+      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-[320px] z-50 bg-[#1a2332] rounded-large shadow-2xl border border-gray-700 overflow-hidden"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -33,7 +33,7 @@ export const MovieHoverCard = ({
       <div className="relative h-[180px] w-full">
         <Image
           removeWrapper
-          src={getImageUrl(movie.poster_path, "w500")}
+          src={movie.backdrop_url}
           alt={movie.title}
           className="w-full h-full object-cover"
         />
@@ -46,9 +46,7 @@ export const MovieHoverCard = ({
         <h4 className="text-white font-bold text-lg mb-1 line-clamp-2">
           {movie.title}
         </h4>
-        <p className="text-warning text-sm mb-3">
-          {movie.original_title}
-        </p>
+        <p className="text-warning text-sm mb-3">{movie.original_title}</p>
 
         {/* Action Buttons */}
         <div className="flex gap-2 mb-3">
@@ -70,7 +68,12 @@ export const MovieHoverCard = ({
             isIconOnly
             className="border-gray-600 text-white hover:bg-white/10"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -85,7 +88,12 @@ export const MovieHoverCard = ({
             isIconOnly
             className="border-gray-600 text-white hover:bg-white/10"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <circle cx="12" cy="12" r="10" strokeWidth={2} />
               <path
                 strokeLinecap="round"
@@ -99,28 +107,39 @@ export const MovieHoverCard = ({
 
         {/* Movie Info */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300 mb-3">
-          <Chip size="sm" className="bg-warning/20 text-warning font-semibold text-[10px]">
-            IMDb {formatRating(movie.vote_average)}
+          <Chip
+            size="sm"
+            className="bg-warning/20 text-warning font-semibold text-[10px] rounded-2xl"
+          >
+            IMDb {movie.tmdb_vote_average}
           </Chip>
-          <Chip size="sm" variant="bordered" className="border-gray-600 text-white text-[10px]">
+          <Chip
+            size="sm"
+            variant="bordered"
+            className="border-gray-600 text-white text-[10px]"
+          >
             4K
           </Chip>
-          <Chip size="sm" variant="bordered" className="border-gray-600 text-white text-[10px]">
+          <Chip
+            size="sm"
+            variant="bordered"
+            className="border-gray-600 text-white text-[10px]"
+          >
             T18
           </Chip>
-          <span>{formatYear(movie.release_date)}</span>
+          <span>{movie.release_year}</span>
           <span>•</span>
           <span>2h 30m</span>
         </div>
 
         {/* Genres */}
         <div className="flex flex-wrap gap-1.5">
-          {movie.genre_ids.slice(0, 4).map((genreId) => (
+          {movie.genres.slice(0, 4).map((genre) => (
             <span
-              key={genreId}
+              key={genre}
               className="px-2 py-1 bg-white/5 rounded text-[11px] text-gray-300"
             >
-              {GENRE_MAP[genreId] || "Khác"}
+              {genre || "Khác"}
             </span>
           ))}
         </div>
@@ -128,4 +147,3 @@ export const MovieHoverCard = ({
     </motion.div>
   );
 };
-

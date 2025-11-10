@@ -6,7 +6,6 @@ import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
 import { motion, AnimatePresence } from "framer-motion";
 import { Movie } from "@/types";
-import { getImageUrl, formatYear } from "@/lib/utils";
 import { MovieHoverCard } from "@/components/movie-hover-card";
 
 interface TopMoviesSectionProps {
@@ -41,7 +40,7 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
                 removeWrapper
                 alt={movie.title}
                 className="z-0 w-full h-full object-cover rounded-lg"
-                src={getImageUrl(movie.poster_path, "w500")}
+                src={movie.poster_url}
               />
 
               {/* Overlay Gradient */}
@@ -96,7 +95,7 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
                 {/* Movie Details */}
                 <div className="flex items-center gap-3 text-sm text-gray-300 w-full">
                   <span className="px-2 py-0.5 bg-white/10 rounded">T18</span>
-                  <span>{formatYear(movie.release_date)}</span>
+                  <span>{movie.release_year}</span>
                   <span>•</span>
                   <span>1h 48m</span>
                 </div>

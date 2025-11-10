@@ -41,22 +41,21 @@ export function truncateText(text: string, maxLength: number): string {
 /**
  * Get image URL from TMDB path
  */
-export function getImageUrl(
-  path: string | null,
-  size: "w185" | "w342" | "w500" | "w780" | "original" = "original"
-): string {
-  if (!path) return "/placeholder-movie.jpg";
-  return `https://image.tmdb.org/t/p/${size}${path}`;
-}
+// export function getImageUrl(
+//   path: string | null,
+//   size: "w185" | "w342" | "w500" | "w780" | "original" = "original"
+// ): string {
+//   if (!path) return "/placeholder-movie.jpg";
+//   return `https://image.tmdb.org/t/p/${size}${path}`;
+// }
 
-/**
- * Get backdrop URL from TMDB path
- */
-export function getBackdropUrl(
-  path: string | null,
-  size: "w300" | "w780" | "w1280" | "original" = "original"
-): string {
-  if (!path) return "/placeholder-backdrop.jpg";
-  return `https://image.tmdb.org/t/p/${size}${path}`;
-}
-
+// /**
+//  * Get backdrop URL from TMDB path
+//  */
+// export function getBackdropUrl(
+//   path: string | null,
+//   size: "w300" | "w780" | "w1280" | "original" = "original"
+// ): string {
+//   if (!path) return "/placeholder-backdrop.jpg";
+//   return `https://image.tmdb.org/t/p/${size}${path}`;
+// }

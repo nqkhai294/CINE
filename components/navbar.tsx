@@ -20,6 +20,8 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { SearchIcon, Logo } from "@/components/icons";
 import { LoginModal } from "@/components/login-modal";
 
+import { IoPerson } from "react-icons/io5";
+
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -38,13 +40,8 @@ export const Navbar = () => {
       aria-label="Search"
       classNames={{
         inputWrapper: "bg-black/30 border-white/20",
-        input: "text-sm text-white placeholder:text-white/60",
+        input: "text-sm text-white placeholder:text-white/60 min-w-[250px]",
       }}
-      endContent={
-        <Kbd className="hidden lg:inline-block text-xs" keys={["command"]}>
-          K
-        </Kbd>
-      }
       labelPlacement="outside"
       placeholder="Tìm kiếm phim, diễn viên"
       startContent={
@@ -105,9 +102,10 @@ export const Navbar = () => {
           <NavbarItem className="flex gap-3 items-center">
             <ThemeSwitch />
             <Button
-              className="text-sm font-normal text-white"
+              className="text-sm font-semibold text-black bg-white/90 h-10 rounded-full"
               color="default"
               variant="flat"
+              startContent={<IoPerson size={16} />}
               onPress={() => setLoginModalOpen(true)}
               size="sm"
             >
