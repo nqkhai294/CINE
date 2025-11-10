@@ -127,12 +127,15 @@ export const loginUser = async (
     });
 
     if (res.data && res.data.result.status) {
-      return res.data.data; // Assuming the token is in data
+      return res.data; // Assuming the token is in data
     }
     return null;
-  } catch (error) {
-    console.error("Error logging in:", error);
-    return null;
+  } catch (error: any) {
+    console.error("Error logging in:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
   }
 };
 
@@ -156,8 +159,12 @@ export const registerUser = async (
     });
 
     return res.data;
-  } catch (error) {
-    console.error("Error registering user:", error);
-    return null;
+  } catch (error: any) {
+    console.error("Error registering user:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+
+    throw new Error("Network or server error occurred");
   }
 };
