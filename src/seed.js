@@ -114,9 +114,9 @@ const seedCreditsForMovie = async (movieId) => {
 
 const seedMovies = async () => {
   try {
-    console.log("Bắt đầu lấy dữ liệu phim (movies)...");
+    console.log("Bắt đầu lấy dữ liệu 1000 phim (50 trang)...");
     let moviesToInsert = [];
-    for (let page = 1; page <= 25; page++) {
+    for (let page = 1; page <= 50; page++) {
       // Lấy 500 phim (25 trang)
       const response = await axios.get(`${TMDB_BASE_URL}/movie/popular`, {
         params: {
@@ -133,30 +133,54 @@ const seedMovies = async () => {
     console.log(
       `Lấy được ${moviesToInsert.length} phim. Bắt đầu chèn/cập nhật CSDL...`
     );
-    let insertedMovieCount = 0;
+    let insertedOrUpdatedCount = 0;
 
-    // 1. Chèn phim MỚI (bỏ qua phim cũ)
-    // Vẫn giữ logic cũ để thêm phim mới nếu có
+    // --- Vòng lặp 1: Chèn hoặc Cập nhật Phim ---
     for (const movie of moviesToInsert) {
       if (!movie.poster_path || !movie.overview || !movie.release_date)
         continue;
 
+      // NÂNG CẤP: Thêm tất cả các trường mới vào câu INSERT
       const movieQuery = {
-        text: `INSERT INTO Movies (id, title, summary, poster_url, release_year)
-               VALUES ($1, $2, $3, $4, $5)
-               ON CONFLICT (id) DO NOTHING`,
+        text: `INSERT INTO Movies (
+                   id, title, summary, poster_url, release_year,
+                   backdrop_url, popularity, tmdb_vote_average, tmdb_vote_count, release_date, original_language
+                 )
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                 -- NÂNG CẤP: Đổi thành DO UPDATE để làm mới dữ liệu khi chạy lại
+                 ON CONFLICT (id) DO UPDATE SET
+                   title = EXCLUDED.title,
+                   summary = EXCLUDED.summary,
+                   poster_url = EXCLUDED.poster_url,
+                   release_year = EXCLUDED.release_year,
+                   backdrop_url = EXCLUDED.backdrop_url,
+                   popularity = EXCLUDED.popularity,
+                   tmdb_vote_average = EXCLUDED.tmdb_vote_average,
+                   tmdb_vote_count = EXCLUDED.tmdb_vote_count,
+                   release_date = EXCLUDED.release_date,
+                   original_language = EXCLUDED.original_language
+                 RETURNING id`, // Thêm RETURNING id để biết nó đã được xử lý
         values: [
           movie.id,
           movie.title,
-          movie.overview,
+          movie.overview, // Dữ liệu của bạn là 'overview'
           `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
           parseInt(movie.release_date.split("-")[0]) || null,
+          // Các giá trị mới
+          movie.backdrop_path
+            ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+            : null,
+          movie.popularity,
+          movie.vote_average,
+          movie.vote_count,
+          movie.release_date || null, // Lưu cả ngày phát hành đầy đủ
+          movie.original_language,
         ],
       };
 
       const movieRes = await db.query(movieQuery);
       if (movieRes.rowCount > 0) {
-        insertedMovieCount++;
+        insertedOrUpdatedCount++;
       }
 
       // Chèn liên kết thể loại (an toàn vì có ON CONFLICT)
@@ -170,9 +194,10 @@ const seedMovies = async () => {
         await db.query(genreQuery);
       }
     }
-    console.log(`Đã chèn thành công ${insertedMovieCount} phim MỚI.`);
+    console.log(`Đã chèn/cập nhật thành công ${insertedOrUpdatedCount} phim.`);
 
     // --- Vòng lặp 2: Cập nhật TRAILER (Tối ưu) ---
+    // (Giữ nguyên không đổi)
     console.log("Đang tìm các phim thiếu trailer để cập nhật...");
     const { rows: moviesToUpdateTrailer } = await db.query(
       "SELECT id FROM Movies WHERE trailer_url IS NULL OR trailer_url = ''"
@@ -197,8 +222,8 @@ const seedMovies = async () => {
     );
 
     // --- Vòng lặp 3: Cập nhật CREDITS (Tối ưu) ---
+    // (Giữ nguyên không đổi)
     console.log("Đang tìm các phim thiếu đạo diễn/diễn viên để cập nhật...");
-    // Lấy ID các phim chưa có trong bảng Movie_Directors
     const { rows: moviesToUpdateCredits } = await db.query(
       `SELECT M.id FROM Movies M
        LEFT JOIN Movie_Directors MD ON M.id = MD.movie_id

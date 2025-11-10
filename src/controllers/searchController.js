@@ -4,7 +4,8 @@ const { stack } = require("../routes/views");
 
 module.exports.logSearch = async (req, res) => {
   try {
-    const { keyword } = req.body;
+    console.log("req.body", req.body);
+
     const userId = req.user.id; // Get from middleware 'protect'
 
     if (!keyword || keyword.trim() === "") {

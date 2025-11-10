@@ -59,3 +59,63 @@ module.exports.getMovieById = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+module.exports.getHighestTMDBMovies = async (req, res) => {
+  try {
+    // Join 3 table để lấy cả thể loại
+    const query = {
+      text: `SELECT 
+          m.*, 
+          COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+        FROM Movies m
+        LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
+        LEFT JOIN Genres g ON mg.genre_id = g.id
+		where release_year = 2025 and tmdb_vote_count > 2000
+        GROUP BY m.id
+        ORDER BY m.tmdb_vote_average DESC NULLS LAST
+        LIMIT 6`,
+    };
+
+    const { rows } = await db.query(query);
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: rows,
+      total: rows.length,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy 6 phim mới nhất:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.getTenNewestMovies = async (req, res) => {
+  try {
+    const query = {
+      text: `SELECT 
+          m.*, 
+          COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+        FROM Movies m
+        LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
+        LEFT JOIN Genres g ON mg.genre_id = g.id
+        GROUP BY m.id
+        ORDER BY m.release_date DESC NULLS LAST
+        LIMIT 10`,
+    };
+
+    const { rows } = await db.query(query);
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: rows,
+      total: rows.length,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy 10 phim mới nhất:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

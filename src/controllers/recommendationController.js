@@ -1,6 +1,6 @@
 // src/controllers/recommendationController.js
 const db = require("../db");
-const { PythonShell } = require("python-shell"); // <--- Import "cầu nối"
+const { PythonShell } = require("python-shell"); // cầu nối giữa node.js và Python
 const path = require("path");
 
 /**
@@ -18,16 +18,15 @@ module.exports.getSimilarMovies = async (req, res) => {
     // 2. Thiết lập các tùy chọn
     const options = {
       mode: "text",
-      pythonPath: "python", // (Hoặc 'py' nếu 'python' không chạy)
-      scriptPath: scriptPath, // Đường dẫn đến thư mục chứa script
-      args: [movieId], // Truyền movieId vào làm "sys.argv[1]"
+      pythonPath: "python",
+      scriptPath: scriptPath,
+      args: [movieId],
     };
 
     // 3. Chạy script Python
     PythonShell.run(scriptFile, options)
       .then((messages) => {
-        // "messages" là một mảng (array) chứa TẤT CẢ những gì Python "print()"
-        // Script của ta chỉ print() 1 dòng, nên ta lấy messages[0]
+        // messages là mảng các dòng output từ script Python
 
         if (!messages || messages.length === 0 || messages[0] === "") {
           return res.status(200).json({
@@ -36,7 +35,7 @@ module.exports.getSimilarMovies = async (req, res) => {
           });
         }
 
-        // messages[0] đang là "787699,872585,1022789"
+        // messages[0] đang là string các ID phim, ví dụ: "12,45,78,23"
         // Chuyển nó về mảng (array) các con số
         const recommendedIds = messages[0]
           .split(",")

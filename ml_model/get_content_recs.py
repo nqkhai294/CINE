@@ -4,7 +4,6 @@ import pandas as pd
 import pickle
 import os
 
-# Hàm này giống hệt hàm trong Notebook
 def get_recommendations(movie_id, cosine_sim_matrix, data):
     try:
         # 1. Tạo "bản đồ" tra cứu ID -> Vị trí (index)
