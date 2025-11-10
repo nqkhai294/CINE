@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
@@ -18,9 +13,9 @@ interface LoginModalProps {
 
 export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       placement="center"
       size="lg"
       classNames={{
@@ -49,7 +44,8 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
             classNames={{
               input: "text-white text-sm",
               label: "text-gray-400 text-xs",
-              inputWrapper: "border-gray-600 hover:border-gray-500 bg-[#0f1823] rounded-md",
+              inputWrapper:
+                "border-gray-600 hover:border-gray-500 bg-[#0f1823] rounded-md",
             }}
           />
 
@@ -63,7 +59,8 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
             classNames={{
               input: "text-white text-sm",
               label: "text-gray-400 text-xs",
-              inputWrapper: "border-gray-600 hover:border-gray-500 bg-[#0f1823] rounded-md",
+              inputWrapper:
+                "border-gray-600 hover:border-gray-500 bg-[#0f1823] rounded-md",
             }}
           />
 
@@ -80,9 +77,9 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
           </div>
 
           {/* Login Button */}
-          <Button 
-            color="warning" 
-            size="md" 
+          <Button
+            color="warning"
+            size="md"
             className="w-full font-medium text-sm rounded-md"
           >
             Đăng nhập

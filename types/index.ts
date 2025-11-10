@@ -21,3 +21,8 @@ export interface Movie {
   tmdb_vote_average: number;
   tmdb_vote_count: number;
 }
+
+export interface MovieDetail extends Movie {
+  actors: { name: string }[];
+  directors: { name: string }[];
+}

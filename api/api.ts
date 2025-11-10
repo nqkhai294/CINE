@@ -1,4 +1,6 @@
+import { user } from "@heroui/theme";
 import axios from "axios";
+import { use } from "react";
 
 const API_URL = "http://localhost:4200/api";
 
@@ -87,6 +89,75 @@ export const getMovieDetails = async (id: string | number) => {
     } else return null;
   } catch (error) {
     console.error("Error fetching movie details:", error);
+    return null;
+  }
+};
+
+export const getSimilarMovies = async (id: string | number) => {
+  try {
+    const res = await apiClient.get(`/recommendations/similar/${id}`);
+
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error fetching similar movies:", error);
+    return [];
+  }
+};
+
+// Auth API
+
+/**
+ * Login user
+ */
+
+export const loginUser = async (
+  username: string,
+  password: string,
+  turnstileToken: string
+) => {
+  try {
+    const res = await apiClient.post("/auth/login", {
+      username,
+      password,
+      turnstileToken,
+    });
+
+    if (res.data && res.data.result.status) {
+      return res.data.data; // Assuming the token is in data
+    }
+    return null;
+  } catch (error) {
+    console.error("Error logging in:", error);
+    return null;
+  }
+};
+
+/**
+ * Register user
+ */
+export const registerUser = async (
+  email: string,
+  username: string,
+  password: string,
+  displayName: string,
+  turnstileToken: string
+) => {
+  try {
+    const res = await apiClient.post("/auth/register", {
+      email,
+      username,
+      password,
+      displayName,
+      turnstileToken,
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("Error registering user:", error);
     return null;
   }
 };
