@@ -1,7 +1,7 @@
 const db = require("../db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { verifyTurnstileToken } = require("../utils/veryfyTurnstile");
+const verifyTurnstile = require("../utils/verifyTurnstile");
 
 // Register a new user
 module.exports.register = async (req, res) => {

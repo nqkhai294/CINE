@@ -1,6 +1,8 @@
 // src/server.js
 const express = require("express");
 const db = require("./db");
+
+const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 4200;
 
@@ -12,6 +14,14 @@ const reviewRoutes = require("./routes/reviews");
 const viewRoutes = require("./routes/views");
 const searchRoutes = require("./routes/search");
 const recommendationRoutes = require("./routes/recommendations");
+
+const corsOptions = {
+  origin: "http://localhost:3000",
+  method: "GET,OPTIONS,PUT,PATCH,POST,DELETE",
+  allowedHeaders: "Content-Type, Authorization",
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
