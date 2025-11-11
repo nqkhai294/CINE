@@ -62,7 +62,7 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
                   size="sm"
                   variant="flat"
                 >
-                  T.Mirth
+                  T.Minh
                 </Chip>
               </div>
 

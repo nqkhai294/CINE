@@ -11,6 +11,9 @@ import Turnstile from "react-turnstile";
 import { loginUser, registerUser } from "@/api/api";
 import { errorToast, successToast } from "./toast";
 
+import { useAppDispatch } from "@/store/hooks";
+import { login } from "@/store/slices/authSlice";
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,6 +23,8 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   const [isRegister, setIsRegister] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [turnstileKey, setTurnstileKey] = useState(0);
+
+  const dispatch = useAppDispatch();
 
   // Login fields
   const [username, setUsername] = useState("");
@@ -39,12 +44,16 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
   // Clear form data when modal closes
   const handleClose = () => {
+    resetFrom();
+    onClose();
+  };
+
+  const resetFrom = () => {
     setUsername("");
     setPassword("");
     setEmail("");
     setDisplayName("");
     resetTurnstile();
-    onClose();
   };
 
   const handleSubmit = async () => {
@@ -81,11 +90,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         successToast("Success", "Đăng ký thành công!");
         setIsRegister(false);
         // Clear form
-        setEmail("");
-        setUsername("");
-        setPassword("");
-        setDisplayName("");
-        resetTurnstile();
+        resetFrom();
       } else {
         errorToast("Error", res?.message || "Đăng ký thất bại!");
         // Reset turnstile on error
@@ -115,10 +120,17 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
       }
 
       const res = await loginUser(username, password, turnstileToken);
-      console.log("Login response:", res);
 
       if (res && res.result.status == "ok") {
+        dispatch(
+          login({
+            user: res.data.user,
+            token: res.data.token,
+          })
+        );
         successToast("Success", "Đăng nhập thành công!");
+        console.log("Login response:", res);
+
         handleClose();
       } else {
         errorToast("Error", res?.message || "Đăng nhập thất bại!");
@@ -159,7 +171,10 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
             <Link
               href="#"
               className="text-yellow-500 text-sm"
-              onPress={() => setIsRegister(!isRegister)}
+              onPress={() => {
+                setIsRegister(!isRegister);
+                resetFrom();
+              }}
             >
               {isRegister ? "đăng nhập" : "đăng ký ngay"}
             </Link>
