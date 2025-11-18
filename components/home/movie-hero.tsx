@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Movie } from "@/types";
 import { GENRE_MAP } from "@/config/constants";
+import { useRouter } from "next/navigation";
 
 interface MovieHeroProps {
   movies: Movie[];
@@ -16,8 +17,14 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentMovie = movies[currentIndex];
 
+  const router = useRouter();
+
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index);
+  };
+
+  const onNavigateDetailFilm = (id: number) => {
+    router.push(`/movie/${id}`);
   };
 
   const getSixNewestMovies = () => {};
@@ -127,6 +134,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 }
+                onPress={() => onNavigateDetailFilm(currentMovie.id)}
               >
                 Xem Phim
               </Button>

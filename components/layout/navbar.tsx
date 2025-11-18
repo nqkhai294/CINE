@@ -36,7 +36,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { SearchIcon, Logo } from "@/components/icons";
-import { LoginModal } from "@/components/login-modal";
+import { LoginModal } from "@/components/auth/login-modal";
 
 import { IoPerson } from "react-icons/io5";
 import Image from "next/image";
@@ -52,6 +52,7 @@ export const Navbar = () => {
 
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  console.log("Navbar - isAuthenticated:", isAuthenticated);
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();

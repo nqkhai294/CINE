@@ -9,6 +9,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { Toast, ToastProvider } from "@heroui/toast";
 import { Provider } from "react-redux";
 import { store } from "@/store/store";
+import { AuthLoader } from "@/components/auth/auth-loader";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
   return (
     <Provider store={store}>
+      <AuthLoader />
       <HeroUIProvider navigate={router.push}>
         <ToastProvider placement="top-right" />
         <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>

@@ -1,6 +1,6 @@
 import { getMovies, getHighestRatedMovies, getNewestMovies } from "@/api/api";
-import { MovieHero } from "@/components/movie-hero";
-import { TopMoviesSection } from "@/components/top-movies-section";
+import { MovieHero } from "@/components/home/movie-hero";
+import { TopMoviesSection } from "@/components/home/top-movies-section";
 
 export default async function Home() {
   const [highestRatedMovies, tenNewestMovies, allMovies] = await Promise.all([

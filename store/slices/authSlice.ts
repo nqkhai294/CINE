@@ -21,8 +21,9 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
 
-      // Lưu token vào localStorage
+      // Lưu token và user vào localStorage
       localStorage.setItem("token", action.payload.token);
+      localStorage.setItem("user", JSON.stringify(action.payload.user));
     },
 
     logout: (state) => {
@@ -30,7 +31,9 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
 
+      // Xóa token và user khỏi localStorage
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
 
     // Load user when refresh page

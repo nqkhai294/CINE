@@ -20,6 +20,7 @@ export interface Movie {
   trailer_url: boolean;
   tmdb_vote_average: number;
   tmdb_vote_count: number;
+  runtime?: number;
 }
 
 export interface MovieDetail extends Movie {

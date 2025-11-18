@@ -9,7 +9,7 @@ import { FcGoogle } from "react-icons/fc";
 import { addToast, useToast } from "@heroui/toast";
 import Turnstile from "react-turnstile";
 import { loginUser, registerUser } from "@/api/api";
-import { errorToast, successToast } from "./toast";
+import { errorToast, successToast } from "../ui/toast";
 
 import { useAppDispatch } from "@/store/hooks";
 import { login } from "@/store/slices/authSlice";
