@@ -80,16 +80,13 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
   return (
     <>
       <HeroUINavbar
         maxWidth="full"
         className={clsx(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          scrolled
-            ? "bg-[#0a0e17] shadow-xl"
-            : "!bg-transparent shadow-none"
+          scrolled ? "bg-[#0a0e17] shadow-xl" : "!bg-transparent shadow-none"
         )}
         classNames={{
           wrapper: scrolled ? "px-6 bg-[#0a0e17]" : "px-6 !bg-transparent",
@@ -101,7 +98,7 @@ export const Navbar = () => {
         }}
       >
         <NavbarContent className="flex-grow" justify="start">
-          <NavbarBrand as="li" className="gap-2 flex-shrink-0 w-auto">
+          <NavbarBrand as="li" className="gap-2 flex-shrink-0">
             <NextLink
               className="flex justify-start items-center gap-2"
               href="/"
@@ -111,12 +108,12 @@ export const Navbar = () => {
                 alt="logo"
                 width={120}
                 height={70}
-                className="w-[120px] h-[70px] object-contain"
+                className="w-[120px] h-[70px] object-contain flex-shrink-0"
               />
             </NextLink>
           </NavbarBrand>
 
-          <div className="hidden md:flex mx-4 flex-1 max-w-5xl">
+          <div className="flex mx-4 w-[230px] flex-shrink-0">
             <SearchBar />
           </div>
 
