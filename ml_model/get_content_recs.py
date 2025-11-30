@@ -18,10 +18,10 @@ def get_recommendations(movie_id, cosine_sim_matrix, data):
         # 4. Sắp xếp
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
 
-        # 5. Lấy 10 phim đầu (bỏ qua phim đầu tiên, vì đó là chính nó)
-        sim_scores = sim_scores[1:11]
+        # 5. Lấy 15 phim đầu (bỏ qua phim đầu tiên, vì đó là chính nó)
+        sim_scores = sim_scores[1:16]
 
-        # 6. Lấy ID của 10 phim đó
+        # 6. Lấy ID của 15 phim đó
         movie_indices = [i[0] for i in sim_scores]
         
         # 7. Trả về ID, không phải title
