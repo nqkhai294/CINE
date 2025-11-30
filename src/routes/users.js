@@ -8,7 +8,7 @@ const { protect } = require("../middleware/authMiddleware");
  * API: GET /api/users/:userId
  * Mô tả: Lấy thông tin profile của user theo ID
  */
-router.get("/:userId", userController.getUserById);
+// router.get("/:userId", userController.getUserById);
 
 /**
  * API: PUT /api/users/profile
@@ -17,10 +17,10 @@ router.get("/:userId", userController.getUserById);
 router.put("/profile", protect, userController.updateUserProfile);
 
 /**
- * API: GET /api/users/me
+ * API: GET /api/users/:id
  * Mô tả: Lấy thông tin profile của user hiện tại (cần đăng nhập)
  */
-router.get("/me", protect, async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   // Redirect to getUserById với user hiện tại
   req.params.userId = req.user.id;
   return userController.getUserById(req, res);
