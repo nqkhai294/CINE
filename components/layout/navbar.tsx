@@ -44,6 +44,7 @@ import AppLogo from "@/public/logo.png";
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
+import { SearchBar } from "@/components/layout/search-bar";
 
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -79,22 +80,6 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const searchInput = (
-    <Input
-      aria-label="Search"
-      classNames={{
-        inputWrapper: "bg-black/30 border-white/20",
-        input: "text-sm text-white placeholder:text-white/60 min-w-[250px]",
-      }}
-      labelPlacement="outside"
-      placeholder="Tìm kiếm phim, diễn viên"
-      startContent={
-        <SearchIcon className="text-sm text-white/60 pointer-events-none flex-shrink-0" />
-      }
-      type="search"
-      variant="bordered"
-    />
-  );
 
   return (
     <>
@@ -115,8 +100,8 @@ export const Navbar = () => {
           backdropFilter: "none",
         }}
       >
-        <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-          <NavbarBrand as="li" className="gap-2 max-w-fit min-w-[120px]">
+        <NavbarContent className="flex-grow" justify="start">
+          <NavbarBrand as="li" className="gap-2 flex-shrink-0 w-auto">
             <NextLink
               className="flex justify-start items-center gap-2"
               href="/"
@@ -124,16 +109,18 @@ export const Navbar = () => {
               <Image
                 src={AppLogo}
                 alt="logo"
-                width={180}
-                height={100}
-                className="w-[180px] h-[100px] object-contain"
+                width={120}
+                height={70}
+                className="w-[120px] h-[70px] object-contain"
               />
             </NextLink>
           </NavbarBrand>
 
-          <div className="hidden md:flex ml-8 mr-8 flex-1">{searchInput}</div>
+          <div className="hidden md:flex mx-4 flex-1 max-w-5xl">
+            <SearchBar />
+          </div>
 
-          <ul className="hidden lg:flex gap-6 justify-start text-sm flex-shrink-0 whitespace-nowrap ml-4">
+          <ul className="hidden lg:flex gap-4 justify-start text-sm flex-shrink-0 whitespace-nowrap ml-2">
             {siteConfig.navItems.map((item) => (
               <NavbarItem key={item.href}>
                 <NextLink
@@ -147,7 +134,7 @@ export const Navbar = () => {
           </ul>
         </NavbarContent>
 
-        <NavbarContent className="flex basis-1/5 sm:basis-full" justify="end">
+        <NavbarContent className="flex-shrink-0" justify="end">
           <NavbarItem className="flex gap-3 items-center">
             {isAuthenticated ? (
               <Dropdown placement="bottom-end">

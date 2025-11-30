@@ -108,6 +108,26 @@ export const getSimilarMovies = async (id: string | number) => {
   }
 };
 
+/**
+ * Search movies by keyword
+ */
+export const searchMovies = async (keyword: string) => {
+  try {
+    const res = await apiClient.get(`/movies/search`, {
+      params: { keyword },
+    });
+
+    if (res.data && res.data.result.status === "ok") {
+      return res.data.data;
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error searching movies:", error);
+    return [];
+  }
+};
+
 // Auth API
 
 /**
