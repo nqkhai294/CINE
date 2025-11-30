@@ -4,6 +4,7 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Image } from "@heroui/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Movie } from "@/types";
 // import { getImageUrl, formatYear, formatRating } from "@/lib/utils";
 import { GENRE_MAP } from "@/config/constants";
@@ -19,6 +20,12 @@ export const MovieHoverCard = ({
   onMouseEnter,
   onMouseLeave,
 }: MovieHoverCardProps) => {
+  const router = useRouter();
+
+  const handleWatchNow = () => {
+    router.push(`/movie/${movie.id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -54,6 +61,7 @@ export const MovieHoverCard = ({
             size="sm"
             color="warning"
             className="flex-1 font-medium text-xs"
+            onPress={handleWatchNow}
             startContent={
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
@@ -129,7 +137,11 @@ export const MovieHoverCard = ({
           </Chip>
           <span>{movie.release_year}</span>
           <span>•</span>
-          <span>2h 30m</span>
+          <span>
+            {movie.runtime
+              ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
+              : "N/A"}
+          </span>
         </div>
 
         {/* Genres */}

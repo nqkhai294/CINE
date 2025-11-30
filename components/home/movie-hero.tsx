@@ -23,11 +23,9 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
     setCurrentIndex(index);
   };
 
-  const onNavigateDetailFilm = (id: number) => {
+  const onNavigateDetailFilm = (id: string) => {
     router.push(`/movie/${id}`);
   };
-
-  const getSixNewestMovies = () => {};
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -98,7 +96,9 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
                 variant="bordered"
                 className="text-white border-white/50 text-xs rounded-md"
               >
-                1h 48m
+                {currentMovie.runtime
+                  ? `${Math.floor(currentMovie.runtime / 60)}h ${currentMovie.runtime % 60}m`
+                  : "N/A"}
               </Chip>
             </div>
 

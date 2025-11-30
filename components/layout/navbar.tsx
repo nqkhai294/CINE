@@ -103,16 +103,16 @@ export const Navbar = () => {
         className={clsx(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           scrolled
-            ? "bg-black/95 backdrop-blur-md shadow-xl"
+            ? "bg-[#0a0e17] shadow-xl"
             : "!bg-transparent shadow-none"
         )}
         classNames={{
-          wrapper: "px-6 !bg-transparent",
-          base: "!bg-transparent",
+          wrapper: scrolled ? "px-6 bg-[#0a0e17]" : "px-6 !bg-transparent",
+          base: scrolled ? "bg-[#0a0e17]" : "!bg-transparent",
         }}
         style={{
-          background: scrolled ? undefined : "transparent",
-          backdropFilter: scrolled ? undefined : "none",
+          background: scrolled ? "#0a0e17" : "transparent",
+          backdropFilter: "none",
         }}
       >
         <NavbarContent className="basis-1/5 sm:basis-full" justify="start">

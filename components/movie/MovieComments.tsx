@@ -1,7 +1,151 @@
-import React from "react";
+"use client";
 
-const MovieComments = () => {
-  return <div>MovieComments</div>;
+import React, { useState } from "react";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Avatar } from "@heroui/avatar";
+import { Button } from "@heroui/button";
+import { Textarea } from "@heroui/input";
+import { FiMessageCircle } from "react-icons/fi";
+import { useAppSelector } from "@/store/hooks";
+import DefaultAvatar from "@/public/default_avt.png";
+
+interface MovieCommentsProps {
+  movieId?: string;
+}
+
+interface Comment {
+  id: number;
+  user: {
+    name: string;
+    avatar: string;
+  };
+  content: string;
+  createdAt: string;
+}
+
+const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
+  const user = useAppSelector((state) => state.auth.user);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  const handleSubmit = () => {
+    if (!comment.trim()) return;
+
+    const newComment: Comment = {
+      id: Date.now(),
+      user: {
+        name: user?.username || "Anonymous",
+        avatar: user?.avatar || DefaultAvatar.src,
+      },
+      content: comment,
+      createdAt: "Vừa xong",
+    };
+
+    setComments([newComment, ...comments]);
+    setComment("");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header with icon */}
+      <div className="flex items-center gap-3">
+        <FiMessageCircle className="text-2xl text-white" />
+        <h2 className="text-2xl font-bold text-white">Bình luận</h2>
+      </div>
+
+      {/* Tabs for Comments and Reviews */}
+      <Tabs
+        aria-label="Comment tabs"
+        variant="underlined"
+        color="warning"
+        classNames={{
+          tabList: "gap-6 w-full relative rounded-none p-0 border-b border-gray-800",
+          cursor: "w-full bg-yellow-500",
+          tab: "max-w-fit px-4 h-12",
+          tabContent: "group-data-[selected=true]:text-white text-gray-400 font-medium",
+        }}
+      >
+        <Tab key="comments" title="Bình luận">
+          <div className="py-6 space-y-6">
+            {/* Comment Form */}
+            {isAuthenticated ? (
+              <div className="bg-[#1e2a3a] rounded-lg p-6">
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Viết bình luận"
+                  variant="flat"
+                  classNames={{
+                    input: "text-white text-base",
+                    inputWrapper: "bg-[#2a3a4a] border-0",
+                  }}
+                  minRows={3}
+                  maxLength={1000}
+                  description={`${comment.length} / 1000`}
+                />
+                
+                <div className="flex items-center justify-between mt-4">
+                  <label className="flex items-center gap-2 text-gray-400 text-sm cursor-pointer">
+                    <input type="checkbox" className="rounded" />
+                    <span>Tiết lộ?</span>
+                  </label>
+                  
+                  <Button
+                    color="warning"
+                    className="font-semibold"
+                    onPress={handleSubmit}
+                    isDisabled={!comment.trim()}
+                  >
+                    Gửi
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#1e2a3a] rounded-lg p-8 text-center">
+                <p className="text-gray-400 mb-4">
+                  Vui lòng <span className="text-yellow-500 underline cursor-pointer">đăng nhập</span> để tham gia bình luận.
+                </p>
+              </div>
+            )}
+
+            {/* Comments List */}
+            {comments.length > 0 ? (
+              <div className="space-y-4">
+                {comments.map((cmt) => (
+                  <div key={cmt.id} className="bg-[#1e2a3a] rounded-lg p-6">
+                    <div className="flex gap-4">
+                      <Avatar src={cmt.user.avatar} size="md" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold text-white">{cmt.user.name}</span>
+                          <span className="text-gray-500 text-sm">• {cmt.createdAt}</span>
+                        </div>
+                        <p className="text-gray-300">{cmt.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-400">Chưa có bình luận nào</p>
+              </div>
+            )}
+          </div>
+        </Tab>
+
+        <Tab key="reviews" title="Đánh giá">
+          <div className="py-6">
+            <div className="text-center py-12">
+              <p className="text-gray-400">Chưa có đánh giá nào</p>
+            </div>
+          </div>
+        </Tab>
+      </Tabs>
+    </div>
+  );
 };
 
 export default MovieComments;

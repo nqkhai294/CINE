@@ -3,7 +3,6 @@ import { getMovieDetails } from "@/api/api";
 import PageWrapper from "@/components/layout/page-wrapper";
 import MovieActions from "@/components/movie/MovieActions";
 import MovieBanner from "@/components/movie/MovieBanner";
-import MovieCast from "@/components/movie/MovieCast";
 import MovieComments from "@/components/movie/MovieComments";
 import MovieInfo from "@/components/movie/MovieInfo";
 import MovieTabs from "@/components/movie/MovieTabs";
@@ -25,6 +24,8 @@ const DetailMoviePage = () => {
       try {
         const res = await getMovieDetails(movieId);
         console.log("Movie Details:", res);
+        console.log("Actors data:", res?.actors);
+        console.log("Cast data:", res?.cast);
         setMovie(res);
       } catch (error) {
         errorToast("Error", "Lỗi khi tải thông tin phim.");
@@ -55,24 +56,34 @@ const DetailMoviePage = () => {
 
   return (
     <PageWrapper>
-      {/* Banner */}
-      <MovieBanner backdrop={movie.backdrop_url} />
+      {/* Banner - Full Width */}
+      <div className="w-full">
+        <MovieBanner backdrop={movie.backdrop_url} />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mx-8">
-        {/* Cột trái */}
+      {/* Content Container */}
+      <div className="max-w-[1400px] mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cột trái */}
+          <div className="space-y-8">
+            <MovieInfo movie={movie} />
+            <TopMoviesWeek />
+          </div>
 
-        <div className="space-y-8">
-          <MovieInfo movie={movie} />
-          <MovieCast cast={movie.cast} />
-          <TopMoviesWeek />
-        </div>
-
-        {/* Cột phải */}
-
-        <div className="lg:col-span-2  space-y-8">
-          <MovieActions movieId={movie.id} />
-          <MovieTabs movieId={movie.id} />
-          <MovieComments movieId={movie.id} />
+          {/* Cột phải */}
+          <div className="lg:col-span-2 space-y-8">
+            <MovieActions
+              movieId={movie.id}
+              trailerUrl={movie.trailer_url}
+              avgRating={
+                movie.tmdb_vote_average
+                  ? parseFloat(movie.tmdb_vote_average)
+                  : undefined
+              }
+            />
+            <MovieTabs movieId={movie.id} actors={movie.actors} />
+            <MovieComments movieId={movie.id} />
+          </div>
         </div>
       </div>
     </PageWrapper>

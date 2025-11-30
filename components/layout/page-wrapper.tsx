@@ -4,7 +4,7 @@ interface PageWrapperProps {
 
 const PageWrapper = ({ children }: PageWrapperProps) => {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0a0e17] text-white">
       <div className="pt-32 pb-20">{children}</div>
     </div>
   );

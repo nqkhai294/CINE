@@ -7,7 +7,7 @@ interface MovieBannerProps {
 
 const MovieBanner = ({ backdrop }: MovieBannerProps) => {
   return (
-    <div className="relative h-[540px] -mx-6 -mt-32 mb-8">
+    <div className="relative h-[540px] w-full -mt-32 mb-8">
       {/* Background Image*/}
       <div
         className="absolute inset-0 bg-cover bg-top"
