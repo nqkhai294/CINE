@@ -1,37 +1,66 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Avatar } from "@heroui/avatar";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { useAppSelector } from "@/store/hooks";
+import Image from "next/image";
+import Link from "next/link";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
-  FiCamera,
-  FiUser,
-  FiMail,
-  FiSave,
   FiCalendar,
-  FiFileText,
+  FiMapPin,
+  FiMail,
+  FiClock,
+  FiHeart,
+  FiBookmark,
+  FiCamera,
+  FiEdit2,
+  FiSave,
+  FiX,
 } from "react-icons/fi";
-import { BiMale } from "react-icons/bi";
+import { FaStar } from "react-icons/fa";
 import { successToast, errorToast } from "@/components/ui/toast";
+import { getCurrentUser, updateUserProfile } from "@/api/api";
+import { login } from "@/store/slices/authSlice";
 import DefaultAvatar from "@/public/default_avt.png";
+
+interface Movie {
+  id: string;
+  title: string;
+  poster_url: string;
+  release_year?: number;
+  tmdb_vote_average?: string;
+}
 
 const UserProfile = () => {
   const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
 
-  const [username, setUsername] = useState(user?.username || "");
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
   const [bio, setBio] = useState(user?.bio || "");
   const [dateOfBirth, setDateOfBirth] = useState(user?.date_of_birth || "");
   const [gender, setGender] = useState<string>(user?.gender || "");
-  const [avatarPreview, setAvatarPreview] = useState(
-    user?.avatar || DefaultAvatar.src
-  );
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Sync state với user data từ Redux khi có thay đổi
+  useEffect(() => {
+    if (user) {
+      setBio(user.bio || "");
+      setDateOfBirth(user.date_of_birth || "");
+      setGender(user.gender || "");
+    }
+  }, [user]);
+
+  // Mock data - sẽ thay bằng API call thực tế
+  const [recentMovies, setRecentMovies] = useState<Movie[]>([]);
+  const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
+  const [watchlistMovies, setWatchlistMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingUser, setIsFetchingUser] = useState(false);
 
   const genderOptions = [
     { value: "male", label: "Nam" },
@@ -39,274 +68,410 @@ const UserProfile = () => {
     { value: "other", label: "Khác" },
   ];
 
-  // Xử lý chọn file avatar
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  useEffect(() => {
+    // Fetch current user data from API
+    const fetchUserData = async () => {
+      if (!user?.id) return;
 
-    if (!file) return;
-
-    // Kiểm tra loại file
-    if (!file.type.startsWith("image/")) {
-      errorToast("Lỗi", "Vui lòng chọn file ảnh!");
-      return;
-    }
-
-    // Kiểm tra kích thước file (5MB = 5 * 1024 * 1024 bytes)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      errorToast("Lỗi", "Kích thước ảnh phải nhỏ hơn 5MB!");
-      return;
-    }
-
-    // Tạo preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-      setAvatarFile(file);
+      setIsFetchingUser(true);
+      try {
+        const response = await getCurrentUser(user.id);
+        console.log("API getCurrentUser response:", response);
+        if (response.data) {
+          const token = localStorage.getItem("token");
+          // Merge với user data hiện tại để giữ lại các field khác
+          const updatedUser = {
+            ...user,
+            ...response.data,
+          };
+          console.log("Updated user:", updatedUser);
+          dispatch(login({ user: updatedUser, token: token || "" }));
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setIsFetchingUser(false);
+      }
     };
-    reader.readAsDataURL(file);
-  };
 
-  // Xử lý click vào avatar để chọn file
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+    // Luôn fetch user data khi vào trang profile để có thông tin mới nhất
+    if (user?.id) {
+      fetchUserData();
+    }
 
-  // Xử lý lưu thông tin
+    // TODO: Fetch user's movies data from API
+    // fetchRecentMovies();
+    // fetchLikedMovies();
+    // fetchWatchlistMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps = chỉ chạy 1 lần khi mount
+
   const handleSave = async () => {
     setIsLoading(true);
-
     try {
-      // TODO: Gọi API để cập nhật thông tin user
-      // const formData = new FormData();
-      // formData.append("username", username);
-      // formData.append("bio", bio);
-      // formData.append("date_of_birth", dateOfBirth);
-      // formData.append("gender", gender);
-      // if (avatarFile) {
-      //   formData.append("avatar", avatarFile);
-      // }
-      // await updateUserProfile(formData);
+      // Prepare data to send
+      const profileData: {
+        bio?: string;
+        avatar_url?: string;
+        date_of_birth?: string;
+        gender?: string;
+      } = {};
 
-      // Giả lập API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (bio !== user?.bio) profileData.bio = bio;
+      if (dateOfBirth !== user?.date_of_birth)
+        profileData.date_of_birth = dateOfBirth;
+      if (gender !== user?.gender) profileData.gender = gender;
+
+      // Call API to update profile
+      const response = await updateUserProfile(profileData);
+
+      // Update Redux store with new user data
+      if (response.data) {
+        const token = localStorage.getItem("token");
+        // Merge user data cũ với data mới để giữ lại username, email
+        const updatedUser = {
+          ...user,
+          ...response.data,
+        };
+        dispatch(login({ user: updatedUser, token: token || "" }));
+      }
 
       successToast("Thành công", "Cập nhật thông tin thành công!");
-    } catch (error) {
-      errorToast("Lỗi", "Cập nhật thông tin thất bại!");
+      setIsEditMode(false);
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Cập nhật thông tin thất bại!");
       console.error("Error updating profile:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0a0e17] pb-20">
-      {/* Header Section với Avatar */}
-      <div className="relative bg-gradient-to-b from-gray-800/50 to-transparent pb-32">
-        <div className="max-w-6xl mx-auto px-6 pt-12">
-          <h1 className="text-4xl font-bold text-white mb-12">
-            Cài đặt tài khoản
-          </h1>
+  const handleCancel = () => {
+    setBio(user?.bio || "");
+    setDateOfBirth(user?.date_of_birth || "");
+    setGender(user?.gender || "");
+    setIsEditMode(false);
+  };
 
-          {/* Avatar Section - Nổi bật */}
-          <div className="flex flex-col items-center">
-            <div className="relative group mb-6">
-              <Avatar
-                src={avatarPreview}
-                className="w-40 h-40 text-large ring-4 ring-yellow-500/50 hover:ring-yellow-500 transition-all"
-                isBordered
-                color="warning"
-              />
-
-              {/* Overlay khi hover */}
-              <button
-                onClick={handleAvatarClick}
-                className="absolute inset-0 rounded-full bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                type="button"
-              >
-                <FiCamera className="text-white text-3xl mb-2" />
-                <span className="text-white text-sm font-medium">
-                  Đổi ảnh
-                </span>
-              </button>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-
-            <p className="text-gray-400 text-sm">
-              JPG, PNG hoặc GIF • Tối đa 5MB
+  const MovieCard = ({ movie }: { movie: Movie }) => (
+    <Link
+      href={`/movie/${movie.id}`}
+      className="group relative block rounded-lg overflow-hidden bg-gray-800/50 hover:bg-gray-700/50 transition-all"
+    >
+      <div className="relative aspect-[2/3]">
+        <Image
+          src={movie.poster_url}
+          alt={movie.title}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-0 left-0 right-0 p-2">
+            <p className="text-white font-medium text-xs line-clamp-2 mb-1">
+              {movie.title}
             </p>
+            {movie.tmdb_vote_average && (
+              <div className="flex items-center gap-1">
+                <FaStar className="text-yellow-500 text-xs" />
+                <span className="text-white text-xs">
+                  {parseFloat(movie.tmdb_vote_average).toFixed(1)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
+      <div className="p-2">
+        <p className="text-white text-xs font-medium line-clamp-1">
+          {movie.title}
+        </p>
+        {movie.release_year && (
+          <p className="text-gray-400 text-xs">{movie.release_year}</p>
+        )}
+      </div>
+    </Link>
+  );
 
-      {/* Form Section */}
-      <div className="max-w-4xl mx-auto px-6 -mt-20">
-        <div className="space-y-8">
-          {/* Thông tin cơ bản */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1 h-8 bg-yellow-500 rounded-full"></div>
-              Thông tin cơ bản
-            </h2>
+  const MovieSection = ({
+    title,
+    icon,
+    movies,
+    emptyMessage,
+  }: {
+    title: string;
+    icon: React.ReactNode;
+    movies: Movie[];
+    emptyMessage: string;
+  }) => (
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        {icon}
+        <h2 className="text-lg font-bold text-white">{title}</h2>
+        {movies.length > 0 && (
+          <Chip size="sm" variant="flat" className="ml-2">
+            {movies.length}
+          </Chip>
+        )}
+      </div>
 
-            <div className="space-y-6">
-              {/* Username */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                  <FiUser className="text-yellow-500" />
-                  Tên người dùng
-                </label>
-                <Input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Nhập tên của bạn"
-                  variant="flat"
-                  classNames={{
-                    input: "text-white text-base",
-                    inputWrapper:
-                      "bg-gray-800/50 border border-gray-700 hover:border-yellow-500 focus-within:border-yellow-500 h-14 transition-all",
-                  }}
-                  size="lg"
-                />
-              </div>
+      {movies.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {movies.map((movie) => (
+            <MovieCard key={movie.id} movie={movie} />
+          ))}
+        </div>
+      ) : (
+        <Card className="bg-gray-800/30 border border-gray-700/50">
+          <CardBody>
+            <p className="text-gray-400 text-center py-8 text-xs">
+              {emptyMessage}
+            </p>
+          </CardBody>
+        </Card>
+      )}
+    </div>
+  );
 
-              {/* Email */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                  <FiMail className="text-yellow-500" />
-                  Email
-                </label>
-                <Input
-                  value={user?.email || ""}
-                  isReadOnly
-                  variant="flat"
-                  classNames={{
-                    input: "text-gray-400 text-base",
-                    inputWrapper:
-                      "bg-gray-800/30 border border-gray-700/50 h-14",
-                  }}
-                  size="lg"
-                  description="Email không thể thay đổi"
-                />
-              </div>
+  return (
+    <div className="min-h-screen bg-[#0a0e17] pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Sidebar - User Info (1/3) */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <Card className="bg-gray-800/50 border border-gray-700/50">
+                <CardBody className="p-6">
+                  {/* Edit Button */}
+                  <div className="flex justify-end mb-2">
+                    {!isEditMode ? (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<FiEdit2 />}
+                        onPress={() => setIsEditMode(true)}
+                        className="text-xs"
+                      >
+                        Chỉnh sửa
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          color="success"
+                          startContent={<FiSave />}
+                          onPress={handleSave}
+                          isLoading={isLoading}
+                          className="text-xs"
+                        >
+                          Lưu
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          startContent={<FiX />}
+                          onPress={handleCancel}
+                          isDisabled={isLoading}
+                          className="text-xs"
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    )}
+                  </div>
 
-              {/* Bio */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                  <FiFileText className="text-yellow-500" />
-                  Tiểu sử
-                </label>
-                <Textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Viết vài dòng về bạn..."
-                  variant="flat"
-                  classNames={{
-                    input: "text-white text-base",
-                    inputWrapper:
-                      "bg-gray-800/50 border border-gray-700 hover:border-yellow-500 focus-within:border-yellow-500 transition-all",
-                  }}
-                  minRows={4}
-                  maxRows={6}
-                />
-              </div>
+                  {/* Avatar */}
+                  <div className="flex justify-center mb-4">
+                    <Avatar
+                      src={user?.avatar || DefaultAvatar.src}
+                      className="w-32 h-32 text-large ring-4 ring-yellow-500/30"
+                      isBordered
+                      color="warning"
+                    />
+                  </div>
+
+                  {/* Display Name */}
+                  <div className="text-center mb-4">
+                    <h1 className="text-xl font-bold text-white mb-2">
+                      {user?.username || "Guest User"}
+                    </h1>
+
+                    {/* Bio - Editable */}
+                    {isEditMode ? (
+                      <Textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Viết vài dòng về bạn..."
+                        variant="flat"
+                        classNames={{
+                          input: "text-white text-xs",
+                          inputWrapper:
+                            "bg-gray-700/50 border border-gray-600 hover:border-yellow-500 focus-within:border-yellow-500",
+                        }}
+                        minRows={3}
+                        maxRows={5}
+                        size="sm"
+                      />
+                    ) : bio ? (
+                      <p className="text-gray-400 text-xs leading-relaxed">
+                        {bio}
+                      </p>
+                    ) : (
+                      <p className="text-gray-500 text-xs italic">
+                        Chưa có tiểu sử
+                      </p>
+                    )}
+                  </div>
+
+                  {/* User Info */}
+                  <div className="space-y-3 border-t border-gray-700/50 pt-4">
+                    {/* Email - Read only */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <FiMail className="text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-300 truncate">
+                        {user?.email || "Not provided"}
+                      </span>
+                    </div>
+
+                    {/* Date of Birth - Editable */}
+                    {isEditMode ? (
+                      <div className="space-y-1">
+                        <label className="flex items-center gap-2 text-xs text-gray-400">
+                          <FiCalendar className="flex-shrink-0" />
+                          Ngày sinh
+                        </label>
+                        <Input
+                          type="date"
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                          variant="flat"
+                          classNames={{
+                            input: "text-white text-xs",
+                            inputWrapper:
+                              "bg-gray-700/50 border border-gray-600 hover:border-yellow-500 focus-within:border-yellow-500 h-9",
+                          }}
+                          size="sm"
+                        />
+                      </div>
+                    ) : dateOfBirth ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <FiCalendar className="text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-300">
+                          {new Date(dateOfBirth).toLocaleDateString("vi-VN")}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs">
+                        <FiCalendar className="text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-500 italic">
+                          Chưa cập nhật
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Gender - Editable */}
+                    {isEditMode ? (
+                      <div className="space-y-1">
+                        <label className="flex items-center gap-2 text-xs text-gray-400">
+                          <FiMapPin className="flex-shrink-0" />
+                          Giới tính
+                        </label>
+                        <Select
+                          selectedKeys={gender ? [gender] : []}
+                          onSelectionChange={(keys) => {
+                            const value = Array.from(keys)[0] as string;
+                            setGender(value);
+                          }}
+                          placeholder="Chọn giới tính"
+                          variant="flat"
+                          classNames={{
+                            trigger:
+                              "bg-gray-700/50 border border-gray-600 hover:border-yellow-500 data-[focus=true]:border-yellow-500 h-9",
+                            value: "text-white text-xs",
+                          }}
+                          size="sm"
+                        >
+                          {genderOptions.map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              textValue={option.label}
+                            >
+                              <span className="text-xs">{option.label}</span>
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                    ) : gender ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <FiMapPin className="text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-300">
+                          {gender === "male"
+                            ? "Nam"
+                            : gender === "female"
+                              ? "Nữ"
+                              : "Khác"}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs">
+                        <FiMapPin className="text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-500 italic">
+                          Chưa cập nhật
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-700/50">
+                    <div className="text-center">
+                      <p className="text-white font-bold text-lg">
+                        {recentMovies.length}
+                      </p>
+                      <p className="text-gray-400 text-xs">Đã xem</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white font-bold text-lg">
+                        {likedMovies.length}
+                      </p>
+                      <p className="text-gray-400 text-xs">Yêu thích</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white font-bold text-lg">
+                        {watchlistMovies.length}
+                      </p>
+                      <p className="text-gray-400 text-xs">Danh sách</p>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
             </div>
           </div>
 
-          {/* Thông tin cá nhân */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-1 h-8 bg-yellow-500 rounded-full"></div>
-              Thông tin cá nhân
-            </h2>
+          {/* Right Content - Movies Lists (2/3) */}
+          <div className="lg:col-span-2">
+            {/* Recent Movies */}
+            <MovieSection
+              title="Phim xem gần đây"
+              icon={<FiClock className="text-yellow-500 text-lg" />}
+              movies={recentMovies}
+              emptyMessage="Bạn chưa xem phim nào gần đây"
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date of Birth */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                  <FiCalendar className="text-yellow-500" />
-                  Ngày sinh
-                </label>
-                <Input
-                  type="date"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  variant="flat"
-                  classNames={{
-                    input: "text-white text-base",
-                    inputWrapper:
-                      "bg-gray-800/50 border border-gray-700 hover:border-yellow-500 focus-within:border-yellow-500 h-14 transition-all",
-                  }}
-                  size="lg"
-                />
-              </div>
+            {/* Liked Movies */}
+            <MovieSection
+              title="Phim đã thích"
+              icon={<FiHeart className="text-red-500 text-lg" />}
+              movies={likedMovies}
+              emptyMessage="Bạn chưa thích phim nào"
+            />
 
-              {/* Gender */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                  <BiMale className="text-yellow-500" />
-                  Giới tính
-                </label>
-                <Select
-                  selectedKeys={gender ? [gender] : []}
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string;
-                    setGender(value);
-                  }}
-                  placeholder="Chọn giới tính"
-                  variant="flat"
-                  classNames={{
-                    trigger:
-                      "bg-gray-800/50 border border-gray-700 hover:border-yellow-500 data-[focus=true]:border-yellow-500 h-14 transition-all",
-                    value: "text-white text-base",
-                  }}
-                  size="lg"
-                >
-                  {genderOptions.map((option) => (
-                    <SelectItem key={option.value}>{option.label}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-700/50">
-            <Button
-              color="warning"
-              size="lg"
-              startContent={<FiSave />}
-              onPress={handleSave}
-              isLoading={isLoading}
-              className="flex-1 sm:flex-none sm:px-12 font-semibold text-base h-14"
-            >
-              Lưu thay đổi
-            </Button>
-
-            <Button
-              variant="bordered"
-              size="lg"
-              onPress={() => {
-                setUsername(user?.username || "");
-                setBio(user?.bio || "");
-                setDateOfBirth(user?.date_of_birth || "");
-                setGender(user?.gender || "");
-                setAvatarPreview(user?.avatar || DefaultAvatar.src);
-                setAvatarFile(null);
-              }}
-              isDisabled={isLoading}
-              className="border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-800/50 text-base h-14 sm:px-8"
-            >
-              Hủy bỏ
-            </Button>
+            {/* Watchlist */}
+            <MovieSection
+              title="Danh sách xem sau"
+              icon={<FiBookmark className="text-blue-500 text-lg" />}
+              movies={watchlistMovies}
+              emptyMessage="Danh sách xem sau của bạn đang trống"
+            />
           </div>
         </div>
       </div>
@@ -315,4 +480,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-

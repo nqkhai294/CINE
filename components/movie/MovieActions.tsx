@@ -22,47 +22,59 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         {/* Watch Now Button */}
         <Button
-          size="lg"
-          className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-14 px-10 rounded-full transition-all"
-          startContent={<FiPlay className="text-xl" />}
+          size="md"
+          className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold h-11 px-7 rounded-full transition-all text-sm"
+          startContent={<FiPlay className="text-base" />}
         >
           Xem Ngay
         </Button>
 
+        {/* Watch Trailer Button */}
+        {trailerUrl && (
+          <Button
+            size="md"
+            className="bg-[#2a3544] hover:bg-[#364152] text-white font-medium h-11 px-6 rounded-full transition-all text-sm"
+            startContent={<FiPlay className="text-base" />}
+            onPress={() => setIsTrailerOpen(true)}
+          >
+            Xem Trailer
+          </Button>
+        )}
+
         {/* Action Buttons - Dark circular style */}
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-14 w-14 rounded-full transition-all"
-          size="lg"
+          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          size="md"
         >
-          <FiHeart className="text-xl text-white" />
+          <FiHeart className="text-lg text-white" />
         </Button>
         
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-14 w-14 rounded-full transition-all"
-          size="lg"
+          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          size="md"
         >
-          <FiPlus className="text-xl text-white" />
+          <FiPlus className="text-lg text-white" />
         </Button>
         
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-14 w-14 rounded-full transition-all"
-          size="lg"
+          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          size="md"
         >
-          <FiShare2 className="text-xl text-white" />
+          <FiShare2 className="text-lg text-white" />
         </Button>
         
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-14 w-14 rounded-full transition-all"
-          size="lg"
+          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          size="md"
         >
-          <FiMessageCircle className="text-xl text-white" />
+          <FiMessageCircle className="text-lg text-white" />
         </Button>
       </div>
 

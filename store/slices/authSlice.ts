@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { setAuthToken } from "@/api/api";
 
 interface AuthState {
   user: any | null;
@@ -24,6 +25,9 @@ const authSlice = createSlice({
       // Lưu token và user vào localStorage
       localStorage.setItem("token", action.payload.token);
       localStorage.setItem("user", JSON.stringify(action.payload.user));
+
+      // Set token vào axios header
+      setAuthToken(action.payload.token);
     },
 
     logout: (state) => {
@@ -34,6 +38,9 @@ const authSlice = createSlice({
       // Xóa token và user khỏi localStorage
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Xóa token khỏi axios header
+      setAuthToken(null);
     },
 
     // Load user when refresh page
@@ -41,6 +48,9 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+
+      // Set token vào axios header khi load user từ localStorage
+      setAuthToken(action.payload.token);
     },
   },
 });

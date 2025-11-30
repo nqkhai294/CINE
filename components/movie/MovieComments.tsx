@@ -51,8 +51,8 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
     <div className="space-y-6">
       {/* Header with icon */}
       <div className="flex items-center gap-3">
-        <FiMessageCircle className="text-2xl text-white" />
-        <h2 className="text-2xl font-bold text-white">Bình luận</h2>
+        <FiMessageCircle className="text-xl text-white" />
+        <h2 className="text-xl font-bold text-white">Bình luận</h2>
       </div>
 
       {/* Tabs for Comments and Reviews */}
@@ -78,7 +78,7 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                   placeholder="Viết bình luận"
                   variant="flat"
                   classNames={{
-                    input: "text-white text-base",
+                    input: "text-white text-sm",
                     inputWrapper: "bg-[#2a3a4a] border-0",
                   }}
                   minRows={3}

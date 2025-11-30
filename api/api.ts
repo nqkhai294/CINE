@@ -188,3 +188,41 @@ export const registerUser = async (
     throw new Error("Network or server error occurred");
   }
 };
+
+/**
+ * Get current user profile
+ * API sẽ tự động lấy user hiện tại từ token
+ */
+export const getCurrentUser = async (userId: string) => {
+  try {
+    const res = await apiClient.get(`/users/${userId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching current user:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Update user profile
+ */
+export const updateUserProfile = async (profileData: {
+  bio?: string;
+  avatar_url?: string;
+  date_of_birth?: string;
+  gender?: string;
+}) => {
+  try {
+    const res = await apiClient.put("/users/profile", profileData);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error updating profile:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};

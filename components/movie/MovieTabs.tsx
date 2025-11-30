@@ -47,7 +47,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
           cursor: "w-full bg-yellow-500",
           tab: "max-w-fit px-0 h-12",
           tabContent:
-            "group-data-[selected=true]:text-yellow-500 text-gray-400 font-semibold text-base",
+            "group-data-[selected=true]:text-yellow-500 text-gray-400 font-medium text-sm",
         }}
       >
         <Tab key="episodes" title="Tập phim">
@@ -87,7 +87,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                       </div>
                     ) : (
                       <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-3 ring-2 ring-gray-700 group-hover:ring-yellow-500 transition-all">
-                        <span className="text-gray-400 text-2xl font-bold">
+                        <span className="text-gray-400 text-xl font-bold">
                           {actor.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -109,7 +109,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
 
         <Tab key="recommended" title="Đề xuất">
           <div className="py-6">
-            <h3 className="text-2xl font-bold text-white mb-6">
+            <h3 className="text-xl font-bold text-white mb-6">
               Có thể bạn sẽ thích
             </h3>
 
