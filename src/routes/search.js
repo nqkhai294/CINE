@@ -4,7 +4,7 @@ const router = express.Router();
 const searchController = require("../controllers/searchController");
 const { protect } = require("../middleware/authMiddleware");
 
-// API called when a user performs a search
+// API POST: Log search history (cần đăng nhập)
 router.post("/", protect, searchController.logSearch);
 
 module.exports = router;

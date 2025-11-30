@@ -1,6 +1,6 @@
 // src/controllers/recommendationController.js
 const db = require("../db");
-const { PythonShell } = require("python-shell"); // cầu nối giữa node.js và Python
+const { PythonShell } = require("python-shell");
 const path = require("path");
 
 /**
@@ -44,7 +44,16 @@ module.exports.getSimilarMovies = async (req, res) => {
         // 4. Lấy thông tin đầy đủ của các phim từ CSDL (vì Python chỉ trả ID)
         db.query(
           // 'ANY' là cách query "bất kỳ ID nào trong mảng"
-          "SELECT id, title, poster_url, avg_rating FROM Movies WHERE id = ANY($1::int[])",
+          `SELECT 
+            m.*,
+            COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+            
+          FROM Movies m
+          LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
+          LEFT JOIN Genres g ON mg.genre_id = g.id
+          WHERE 
+            m.id = ANY($1::int[]) -- Lọc theo ID gợi ý từ Python
+          GROUP BY m.id;`,
           [recommendedIds]
         )
           .then((result) => {

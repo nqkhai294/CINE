@@ -25,7 +25,55 @@ module.exports.getMovieById = async (req, res) => {
 
     // Get movie details
     const movieQuery = {
-      text: `SELECT * FROM movies WHERE id = $1`,
+      text: `SELECT 
+          m.*, 
+          
+          -- Ép kiểu các cột số về FLOAT cho chuẩn JSON
+          m.popularity::FLOAT,
+          m.tmdb_vote_average::FLOAT,
+          m.avg_rating::FLOAT,
+          
+          
+          COALESCE(
+            (SELECT JSON_AGG(g.name) 
+             FROM Movie_Genres mg 
+             JOIN Genres g ON mg.genre_id = g.id 
+             WHERE mg.movie_id = m.id),
+            '[]'::json
+          ) AS genres,
+          
+          
+          COALESCE(
+            (SELECT JSON_AGG(
+              json_build_object(
+                'id', a.id, 
+                'name', a.name, 
+                'profile_url', a.profile_url
+              )
+            ) 
+             FROM Movie_Actors ma 
+             JOIN Actors a ON ma.actor_id = a.id 
+             WHERE ma.movie_id = m.id),
+            '[]'::json
+          ) AS actors,
+          
+          
+          COALESCE(
+            (SELECT JSON_AGG(
+              json_build_object(
+                'id', d.id, 
+                'name', d.name, 
+                'profile_url', d.profile_url
+              )
+            ) 
+             FROM Movie_Directors md 
+             JOIN Directors d ON md.director_id = d.id 
+             WHERE md.movie_id = m.id),
+            '[]'::json
+          ) AS directors
+          
+        FROM Movies m
+        WHERE m.id = $1;`,
       values: [id],
     };
 
@@ -70,7 +118,7 @@ module.exports.getHighestTMDBMovies = async (req, res) => {
         FROM Movies m
         LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
         LEFT JOIN Genres g ON mg.genre_id = g.id
-		where release_year = 2025 and tmdb_vote_count > 2000
+		    where tmdb_vote_count > 20000
         GROUP BY m.id
         ORDER BY m.tmdb_vote_average DESC NULLS LAST
         LIMIT 6`,
