@@ -66,6 +66,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                           src={actor.profile_url}
                           alt={actor.name}
                           fill
+                          sizes="80px"
                           className="object-cover"
                         />
                       </div>
@@ -125,6 +126,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                           src={movie.poster_url}
                           alt={movie.title}
                           fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">

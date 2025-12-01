@@ -104,6 +104,7 @@ export const SearchBar = () => {
                         src={movie.poster_url}
                         alt={movie.title}
                         fill
+                        sizes="48px"
                         className="object-cover"
                       />
                     ) : (

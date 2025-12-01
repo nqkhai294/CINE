@@ -30,9 +30,11 @@ import {
   updateUserProfile,
   getMovieDetails,
   removeFromWatchlist,
+  removeFromFavouritesList,
 } from "@/api/api";
 import { login } from "@/store/slices/authSlice";
 import { removeFromWatchlist as removeFromWatchlistAction } from "@/store/slices/watchlistSlice";
+import { removeFromFavouritesList as removeFromFavouritesAction } from "@/store/slices/favouritesSlice";
 import DefaultAvatar from "@/public/default_avt.png";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 
@@ -55,14 +57,29 @@ const UserProfile = () => {
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
   const [bio, setBio] = useState(user?.bio || "");
-  const [dateOfBirth, setDateOfBirth] = useState(user?.date_of_birth || "");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>(user?.gender || "");
+
+  // Helper function to convert date to yyyy-MM-dd format
+  const formatDateForInput = (
+    dateString: string | null | undefined
+  ): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      // Format to yyyy-MM-dd
+      return date.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
 
   // Sync state với user data từ Redux khi có thay đổi
   useEffect(() => {
     if (user) {
       setBio(user.bio || "");
-      setDateOfBirth(user.date_of_birth || "");
+      setDateOfBirth(formatDateForInput(user.date_of_birth));
       setGender(user.gender || "");
     }
   }, [user]);
@@ -208,18 +225,30 @@ const UserProfile = () => {
     setIsEditMode(false);
   };
 
-  const openConfirmDialog = (movieId: string, movieTitle: string) => {
-    setMovieToDelete({ id: movieId, title: movieTitle });
+  const openConfirmDialog = (
+    movieId: string,
+    movieTitle: string,
+    listType: "watchlist" | "favourites"
+  ) => {
+    setMovieToDelete({ id: movieId, title: movieTitle, listType } as any);
     setShowConfirmDialog(true);
   };
 
   const handleConfirmDelete = async () => {
     if (!movieToDelete) return;
 
+    const listType = (movieToDelete as any).listType;
+
     try {
-      await removeFromWatchlist(movieToDelete.id);
-      dispatch(removeFromWatchlistAction(movieToDelete.id));
-      warningToast("Đã xóa", "Đã xóa khỏi danh sách xem sau");
+      if (listType === "favourites") {
+        await removeFromFavouritesList(movieToDelete.id);
+        dispatch(removeFromFavouritesAction(movieToDelete.id));
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách yêu thích");
+      } else {
+        await removeFromWatchlist(movieToDelete.id);
+        dispatch(removeFromWatchlistAction(movieToDelete.id));
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách xem sau");
+      }
     } catch (error: any) {
       errorToast("Lỗi", error.message || "Có lỗi xảy ra khi xóa phim");
     } finally {
@@ -237,6 +266,7 @@ const UserProfile = () => {
           src={movie.poster_url}
           alt={movie.title}
           fill
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -266,7 +296,13 @@ const UserProfile = () => {
     </Link>
   );
 
-  const WatchlistMovieCard = ({ movie }: { movie: Movie }) => (
+  const DeletableMovieCard = ({
+    movie,
+    listType,
+  }: {
+    movie: Movie;
+    listType: "watchlist" | "favourites";
+  }) => (
     <div className="group relative rounded-lg overflow-hidden bg-gray-800/50 hover:bg-gray-700/50 transition-all">
       <Link href={`/movie/${movie.id}`} className="block">
         <div className="relative aspect-[2/3]">
@@ -274,6 +310,7 @@ const UserProfile = () => {
             src={movie.poster_url}
             alt={movie.title}
             fill
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -281,14 +318,6 @@ const UserProfile = () => {
               <p className="text-white font-medium text-xs line-clamp-2 mb-1">
                 {movie.title}
               </p>
-              {/* {movie.tmdb_vote_average && (
-                <div className="flex items-center gap-1">
-                  <FaStar className="text-yellow-500 text-xs" />
-                  <span className="text-white text-xs">
-                    {parseFloat(movie.tmdb_vote_average).toFixed(1)}
-                  </span>
-                </div>
-              )} */}
             </div>
           </div>
         </div>
@@ -311,7 +340,7 @@ const UserProfile = () => {
           isIconOnly
           size="sm"
           className="bg-red-500/90 hover:bg-red-600"
-          onPress={() => openConfirmDialog(movie.id, movie.title)}
+          onPress={() => openConfirmDialog(movie.id, movie.title, listType)}
         >
           <FiTrash2 className="text-white text-sm" />
         </Button>
@@ -324,20 +353,20 @@ const UserProfile = () => {
     icon,
     movies,
     emptyMessage,
-    isWatchlist = false,
+    listType,
   }: {
     title: string;
     icon: React.ReactNode;
     movies: Movie[];
     emptyMessage: string;
-    isWatchlist?: boolean;
+    listType?: "watchlist" | "favourites";
   }) => (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
         {icon}
         <h2 className="text-lg font-bold text-white">{title}</h2>
         {movies.length > 0 && (
-          <Chip size="sm" variant="flat" className="ml-2">
+          <Chip size="sm" variant="flat" className="ml-2 text-white">
             {movies.length}
           </Chip>
         )}
@@ -346,8 +375,12 @@ const UserProfile = () => {
       {movies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {movies.map((movie) =>
-            isWatchlist ? (
-              <WatchlistMovieCard key={movie.id} movie={movie} />
+            listType ? (
+              <DeletableMovieCard
+                key={movie.id}
+                movie={movie}
+                listType={listType}
+              />
             ) : (
               <MovieCard key={movie.id} movie={movie} />
             )
@@ -382,7 +415,7 @@ const UserProfile = () => {
                         variant="flat"
                         startContent={<FiEdit2 />}
                         onPress={() => setIsEditMode(true)}
-                        className="text-xs"
+                        className="text-xs text-white"
                       >
                         Chỉnh sửa
                       </Button>
@@ -404,7 +437,7 @@ const UserProfile = () => {
                           startContent={<FiX />}
                           onPress={handleCancel}
                           isDisabled={isLoading}
-                          className="text-xs"
+                          className="text-xs text-white"
                         >
                           Hủy
                         </Button>
@@ -431,11 +464,13 @@ const UserProfile = () => {
                     {/* Bio - Editable */}
                     {isEditMode ? (
                       <Textarea
+                        label="Tiểu sử"
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         placeholder="Viết vài dòng về bạn..."
                         variant="flat"
                         classNames={{
+                          label: "text-gray-400 text-xs",
                           input: "text-white text-xs",
                           inputWrapper:
                             "bg-gray-700/50 border border-gray-600 hover:border-yellow-500 focus-within:border-yellow-500",
@@ -474,6 +509,7 @@ const UserProfile = () => {
                         </label>
                         <Input
                           type="date"
+                          aria-label="Ngày sinh"
                           value={dateOfBirth}
                           onChange={(e) => setDateOfBirth(e.target.value)}
                           variant="flat"
@@ -509,6 +545,7 @@ const UserProfile = () => {
                           Giới tính
                         </label>
                         <Select
+                          aria-label="Giới tính"
                           selectedKeys={gender ? [gender] : []}
                           onSelectionChange={(keys) => {
                             const value = Array.from(keys)[0] as string;
@@ -596,6 +633,7 @@ const UserProfile = () => {
               icon={<FiHeart className="text-red-500 text-lg" />}
               movies={likedMovies}
               emptyMessage="Bạn chưa thích phim nào"
+              listType="favourites"
             />
 
             {/* Watchlist */}
@@ -604,7 +642,7 @@ const UserProfile = () => {
               icon={<FiBookmark className="text-blue-500 text-lg" />}
               movies={watchlistMovies}
               emptyMessage="Danh sách xem sau của bạn đang trống"
-              isWatchlist={true}
+              listType="watchlist"
             />
           </div>
         </div>
@@ -616,7 +654,11 @@ const UserProfile = () => {
         onClose={() => setShowConfirmDialog(false)}
         onConfirm={handleConfirmDelete}
         title="Xác nhận xóa"
-        message={`Bạn có chắc chắn muốn xóa "${movieToDelete?.title}" khỏi danh sách xem sau?`}
+        message={`Bạn có chắc chắn muốn xóa "${movieToDelete?.title}" khỏi ${
+          (movieToDelete as any)?.listType === "favourites"
+            ? "danh sách yêu thích"
+            : "danh sách xem sau"
+        }?`}
         confirmText="Xóa"
         cancelText="Hủy"
         confirmColor="danger"
