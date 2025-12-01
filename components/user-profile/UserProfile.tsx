@@ -24,7 +24,7 @@ import {
 } from "react-icons/fi";
 import { FaStar } from "react-icons/fa";
 import { successToast, errorToast } from "@/components/ui/toast";
-import { getCurrentUser, updateUserProfile } from "@/api/api";
+import { getCurrentUser, updateUserProfile, getMovieDetails } from "@/api/api";
 import { login } from "@/store/slices/authSlice";
 import DefaultAvatar from "@/public/default_avt.png";
 
@@ -39,6 +39,7 @@ interface Movie {
 const UserProfile = () => {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
+  const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -99,12 +100,29 @@ const UserProfile = () => {
       fetchUserData();
     }
 
-    // TODO: Fetch user's movies data from API
-    // fetchRecentMovies();
-    // fetchLikedMovies();
-    // fetchWatchlistMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps = chỉ chạy 1 lần khi mount
+
+  // Fetch watchlist movies khi watchlistIds thay đổi
+  useEffect(() => {
+    const fetchWatchlistMovies = async () => {
+      if (watchlistIds.length === 0) {
+        setWatchlistMovies([]);
+        return;
+      }
+
+      try {
+        const moviesPromises = watchlistIds.map((id) => getMovieDetails(id));
+        const moviesData = await Promise.all(moviesPromises);
+        const validMovies = moviesData.filter((movie) => movie !== null);
+        setWatchlistMovies(validMovies as Movie[]);
+      } catch (error) {
+        console.error("Error fetching watchlist movies:", error);
+      }
+    };
+
+    fetchWatchlistMovies();
+  }, [watchlistIds]);
 
   const handleSave = async () => {
     setIsLoading(true);

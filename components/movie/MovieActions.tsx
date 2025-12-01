@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
 import { FiPlay, FiHeart, FiPlus, FiShare2, FiMessageCircle } from "react-icons/fi";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import {
+  addToWatchlist as addToWatchlistAction,
+  removeFromWatchlist as removeFromWatchlistAction,
+} from "@/store/slices/watchlistSlice";
+import { addToWatchlist, removeFromWatchlist } from "@/api/api";
+import { successToast, errorToast } from "@/components/ui/toast";
 
 interface MovieActionsProps {
   movieId?: string;
@@ -13,11 +20,42 @@ interface MovieActionsProps {
 
 const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps) => {
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
+  
+  const dispatch = useAppDispatch();
+  const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  
+  const isInWatchlist = watchlistIds.includes(movieId);
 
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return "";
     const videoId = url.split("v=")[1] || url.split("/").pop();
     return `https://www.youtube.com/embed/${videoId}`;
+  };
+
+  const handleWatchlistToggle = async () => {
+    if (!isAuthenticated) {
+      errorToast("Vui lòng đăng nhập để thêm vào danh sách");
+      return;
+    }
+
+    setIsAddingToWatchlist(true);
+    try {
+      if (isInWatchlist) {
+        await removeFromWatchlist(movieId);
+        dispatch(removeFromWatchlistAction(movieId));
+        successToast("Đã xóa khỏi danh sách xem sau");
+      } else {
+        await addToWatchlist(movieId);
+        dispatch(addToWatchlistAction(movieId));
+        successToast("Đã thêm vào danh sách xem sau");
+      }
+    } catch (error: any) {
+      errorToast(error.message || "Có lỗi xảy ra");
+    } finally {
+      setIsAddingToWatchlist(false);
+    }
   };
 
   return (
@@ -55,10 +93,16 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
         
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          className={`${
+            isInWatchlist
+              ? "bg-yellow-500 hover:bg-yellow-600"
+              : "bg-[#2a3544] hover:bg-[#364152]"
+          } h-11 w-11 rounded-full transition-all`}
           size="md"
+          onPress={handleWatchlistToggle}
+          isLoading={isAddingToWatchlist}
         >
-          <FiPlus className="text-lg text-white" />
+          <FiPlus className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`} />
         </Button>
         
         <Button

@@ -7,6 +7,8 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/layout/navbar";
+import WatchlistLoader from "@/components/watchlist/watchlist-loader";
+import SessionExpiredToast from "@/components/auth/session-expired-toast";
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +43,8 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+          <WatchlistLoader />
+          <SessionExpiredToast />
           <div className="relative flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">{children}</main>

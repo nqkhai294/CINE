@@ -23,6 +23,40 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+/**
+ * Setup response interceptor to handle 401 errors (token expired)
+ * Tự động logout khi backend trả về 401
+ */
+let logoutCallback: (() => void) | null = null;
+
+export const setLogoutCallback = (callback: () => void) => {
+  logoutCallback = callback;
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Nếu backend trả về 401 (Unauthorized) - token hết hạn
+    if (error.response && error.response.status === 401) {
+      // Clear localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Call logout callback nếu có
+      if (logoutCallback) {
+        logoutCallback();
+      }
+
+      // Redirect về trang chủ với message
+      if (typeof window !== "undefined") {
+        window.location.href = "/?session_expired=true";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // Movies API
 /**
  * Get all movies
@@ -224,5 +258,84 @@ export const updateUserProfile = async (profileData: {
       throw new Error(error.response.data.message);
     }
     throw new Error("Network or server error occurred");
+  }
+};
+
+// Watchlist API
+
+/**
+ * Add movie to watchlist
+ */
+export const addToWatchlist = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.post("/watchlist", { movieId });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error adding to watchlist:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Remove movie from watchlist
+ */
+export const removeFromWatchlist = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.delete(`/watchlist/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error removing from watchlist:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get user's watchlist
+ */
+export const getWatchlist = async () => {
+  try {
+    const res = await apiClient.get("/watchlist");
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    return [];
+  } catch (error: any) {
+    console.error("Error fetching watchlist:", error.response?.data);
+    return [];
+  }
+};
+
+/**
+ * Check if movie is in watchlist
+ */
+export const checkInWatchlist = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.get(`/watchlist/check/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error checking watchlist:", error.response?.data);
+    return { isInWatchlist: false };
+  }
+};
+
+/**
+ * Get watchlist count
+ */
+export const getWatchlistCount = async () => {
+  try {
+    const res = await apiClient.get("/watchlist/count");
+    if (res.data && typeof res.data.count === "number") {
+      return res.data.count;
+    }
+    return 0;
+  } catch (error: any) {
+    console.error("Error fetching watchlist count:", error.response?.data);
+    return 0;
   }
 };
