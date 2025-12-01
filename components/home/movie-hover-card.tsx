@@ -168,15 +168,13 @@ export const MovieHoverCard = ({
             isIconOnly
             className={`${
               isInWatchlist
-                ? "bg-yellow-500 hover:bg-yellow-600"
-                : "bg-[#2a3544] hover:bg-[#364152]"
+                ? "bg-yellow-500 hover:bg-yellow-600 border-yellow-500"
+                : "border-gray-600 hover:bg-white/10"
             } text-white`}
             onPress={handleWatchlistToggle}
             isLoading={isAddingToWatchlist}
           >
-            <FiPlus
-              className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`}
-            />
+            <FiPlus className="text-lg" />
           </Button>
         </div>
 

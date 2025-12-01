@@ -220,6 +220,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
               <Button
                 size="md"
                 variant="bordered"
+                isIconOnly
                 className={`${
                   isInFavourites
                     ? "bg-red-500 hover:bg-red-600 border-red-500"
@@ -236,14 +237,13 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
                 isIconOnly
                 className={`${
                   isInWatchlist
-                    ? "bg-yellow-500 hover:bg-yellow-600"
-                    : "bg-[#2a3544] hover:bg-[#364152]"
+                    ? "bg-yellow-500 hover:bg-yellow-600 border-yellow-500"
+                    : "border-gray-600 hover:bg-white/10"
                 } text-white`}
                 onPress={handleWatchlistToggle}
+                isLoading={isAddingToWatchlist}
               >
-                <FiPlus
-                  className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`}
-                />
+                <FiPlus className="text-lg" />
               </Button>
             </div>
           </motion.div>
