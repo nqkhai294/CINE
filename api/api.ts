@@ -339,3 +339,82 @@ export const getWatchlistCount = async () => {
     return 0;
   }
 };
+
+// Favourites API
+
+/**
+ * add movie to favourites
+ * @param movieId
+ * @returns
+ */
+export const addToFavouritesList = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.post("/favourites", { movieId });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error adding to favourites:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+export const removeFromFavouritesList = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.delete(`/favourites/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error removing from favourites:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get user's favourites
+ */
+export const getFavouritesList = async () => {
+  try {
+    const res = await apiClient.get("/favourites");
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    return [];
+  } catch (error: any) {
+    console.error("Error fetching favourites:", error.response?.data);
+    return [];
+  }
+};
+
+/**
+ * check if movie is in favourites list
+ * @returns
+ */
+export const checkInFavouritesList = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.get(`/favourites/check/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error checking favourites:", error.response?.data);
+    return { isInFavourites: false };
+  }
+};
+
+/**
+ * get favourites count
+ */
+export const getFavouritesListCount = async () => {
+  try {
+    const res = await apiClient.get("/favourites/count");
+    if (res.data && typeof res.data.count === "number") {
+      return res.data.count;
+    }
+    return 0;
+  } catch (error: any) {
+    console.error("Error fetching favourites count:", error.response?.data);
+    return 0;
+  }
+};

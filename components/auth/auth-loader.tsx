@@ -13,7 +13,10 @@ export const AuthLoader = () => {
     // Setup logout callback cho axios interceptor
     setLogoutCallback(() => {
       dispatch(logout());
-      errorToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      errorToast(
+        "Cảnh báo",
+        "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+      );
     });
 
     // Chỉ chạy 1 lần khi component mount
@@ -37,4 +40,3 @@ export const AuthLoader = () => {
   // Component này không render gì cả
   return null;
 };
-

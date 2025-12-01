@@ -3,14 +3,29 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalBody } from "@heroui/modal";
-import { FiPlay, FiHeart, FiPlus, FiShare2, FiMessageCircle } from "react-icons/fi";
+import {
+  FiPlay,
+  FiHeart,
+  FiPlus,
+  FiShare2,
+  FiMessageCircle,
+} from "react-icons/fi";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   addToWatchlist as addToWatchlistAction,
   removeFromWatchlist as removeFromWatchlistAction,
 } from "@/store/slices/watchlistSlice";
-import { addToWatchlist, removeFromWatchlist } from "@/api/api";
-import { successToast, errorToast } from "@/components/ui/toast";
+import {
+  addToFavouritesList as addToFavouritesAction,
+  removeFromFavouritesList as removeFromFavouritesAction,
+} from "@/store/slices/favouritesSlice";
+import {
+  addToWatchlist,
+  removeFromWatchlist,
+  addToFavouritesList,
+  removeFromFavouritesList,
+} from "@/api/api";
+import { successToast, errorToast, warningToast } from "@/components/ui/toast";
 
 interface MovieActionsProps {
   movieId?: string;
@@ -18,15 +33,24 @@ interface MovieActionsProps {
   avgRating?: number;
 }
 
-const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps) => {
+const MovieActions = ({
+  movieId = "",
+  trailerUrl,
+  avgRating,
+}: MovieActionsProps) => {
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
-  
+  const [isAddingToFavourites, setIsAddingToFavourites] = useState(false);
+
   const dispatch = useAppDispatch();
   const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
+  const { movieIds: favouritesIds } = useAppSelector(
+    (state) => state.favourites
+  );
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  
+
   const isInWatchlist = watchlistIds.includes(movieId);
+  const isInFavourites = favouritesIds.includes(movieId);
 
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return "";
@@ -36,7 +60,7 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
 
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {
-      errorToast("Vui lòng đăng nhập để thêm vào danh sách");
+      errorToast("Lỗi", "Vui lòng đăng nhập để thêm vào danh sách");
       return;
     }
 
@@ -45,16 +69,40 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
       if (isInWatchlist) {
         await removeFromWatchlist(movieId);
         dispatch(removeFromWatchlistAction(movieId));
-        successToast("Đã xóa khỏi danh sách xem sau");
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách xem sau");
       } else {
         await addToWatchlist(movieId);
         dispatch(addToWatchlistAction(movieId));
-        successToast("Đã thêm vào danh sách xem sau");
+        successToast("Thành công", "Đã thêm vào danh sách xem sau");
       }
     } catch (error: any) {
-      errorToast(error.message || "Có lỗi xảy ra");
+      errorToast("Lỗi", error.message || "Có lỗi xảy ra");
     } finally {
       setIsAddingToWatchlist(false);
+    }
+  };
+
+  const handleFavouritesToggle = async () => {
+    if (!isAuthenticated) {
+      errorToast("Lỗi", "Vui lòng đăng nhập để thích phim");
+      return;
+    }
+
+    setIsAddingToFavourites(true);
+    try {
+      if (isInFavourites) {
+        await removeFromFavouritesList(movieId);
+        dispatch(removeFromFavouritesAction(movieId));
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách yêu thích");
+      } else {
+        await addToFavouritesList(movieId);
+        dispatch(addToFavouritesAction(movieId));
+        successToast("Thành công", "Đã thêm vào danh sách yêu thích");
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Có lỗi xảy ra");
+    } finally {
+      setIsAddingToFavourites(false);
     }
   };
 
@@ -83,14 +131,23 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
         )}
 
         {/* Action Buttons - Dark circular style */}
+        {/* Like Button */}
         <Button
           isIconOnly
-          className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
+          className={`${
+            isInFavourites
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-[#2a3544] hover:bg-[#364152]"
+          } h-11 w-11 rounded-full transition-all`}
           size="md"
+          onPress={handleFavouritesToggle}
+          isLoading={isAddingToFavourites}
         >
-          <FiHeart className="text-lg text-white" />
+          <FiHeart
+            className={`text-lg ${isInFavourites ? "text-white fill-current" : "text-white"}`}
+          />
         </Button>
-        
+
         <Button
           isIconOnly
           className={`${
@@ -102,9 +159,11 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
           onPress={handleWatchlistToggle}
           isLoading={isAddingToWatchlist}
         >
-          <FiPlus className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`} />
+          <FiPlus
+            className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`}
+          />
         </Button>
-        
+
         <Button
           isIconOnly
           className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
@@ -112,7 +171,7 @@ const MovieActions = ({ movieId = "", trailerUrl, avgRating }: MovieActionsProps
         >
           <FiShare2 className="text-lg text-white" />
         </Button>
-        
+
         <Button
           isIconOnly
           className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"

@@ -24,7 +24,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import { FaStar } from "react-icons/fa";
-import { successToast, errorToast } from "@/components/ui/toast";
+import { successToast, errorToast, warningToast } from "@/components/ui/toast";
 import {
   getCurrentUser,
   updateUserProfile,
@@ -48,6 +48,9 @@ const UserProfile = () => {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
+  const { movieIds: favouritesIds } = useAppSelector(
+    (state) => state.favourites
+  );
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -139,6 +142,27 @@ const UserProfile = () => {
     fetchWatchlistMovies();
   }, [watchlistIds]);
 
+  // Fetch favourites movies khi favouritesIds thay đổi
+  useEffect(() => {
+    const fetchFavouritesMovies = async () => {
+      if (favouritesIds.length === 0) {
+        setLikedMovies([]);
+        return;
+      }
+
+      try {
+        const moviesPromises = favouritesIds.map((id) => getMovieDetails(id));
+        const moviesData = await Promise.all(moviesPromises);
+        const validMovies = moviesData.filter((movie) => movie !== null);
+        setLikedMovies(validMovies as Movie[]);
+      } catch (error) {
+        console.error("Error fetching favourites movies:", error);
+      }
+    };
+
+    fetchFavouritesMovies();
+  }, [favouritesIds]);
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -197,7 +221,7 @@ const UserProfile = () => {
     try {
       await removeFromWatchlist(movieToDelete.id);
       dispatch(removeFromWatchlistAction(movieToDelete.id));
-      successToast("Thành công", "Đã xóa khỏi danh sách xem sau");
+      warningToast("Đã xóa", "Đã xóa khỏi danh sách xem sau");
     } catch (error: any) {
       errorToast("Lỗi", error.message || "Có lỗi xảy ra khi xóa phim");
     } finally {

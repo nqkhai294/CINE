@@ -17,3 +17,12 @@ export const errorToast = (title: string, message: string) => {
     timeout: 3000,
   });
 };
+
+export const warningToast = (title: string, message: string) => {
+  addToast({
+    title: title,
+    description: message,
+    color: "warning",
+    timeout: 3000,
+  });
+};
