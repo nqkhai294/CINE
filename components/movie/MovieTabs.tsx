@@ -50,22 +50,6 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
             "group-data-[selected=true]:text-yellow-500 text-gray-400 font-medium text-sm",
         }}
       >
-        <Tab key="episodes" title="Tập phim">
-          <div className="py-6">
-            <p className="text-gray-400 text-center py-8">
-              Danh sách tập phim đang được cập nhật...
-            </p>
-          </div>
-        </Tab>
-
-        <Tab key="gallery" title="Gallery">
-          <div className="py-6">
-            <p className="text-gray-400 text-center py-8">
-              Thư viện ảnh đang được cập nhật...
-            </p>
-          </div>
-        </Tab>
-
         <Tab key="cast" title="Diễn viên">
           <div className="py-6">
             {actors && actors.length > 0 ? (
@@ -107,10 +91,18 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
           </div>
         </Tab>
 
+        <Tab key="gallery" title="Gallery">
+          <div className="py-6">
+            <p className="text-gray-400 text-center py-8">
+              Thư viện ảnh đang được cập nhật...
+            </p>
+          </div>
+        </Tab>
+
         <Tab key="recommended" title="Đề xuất">
           <div className="py-6">
             <h3 className="text-xl font-bold text-white mb-6">
-              Có thể bạn sẽ thích
+              Các phim tương tự
             </h3>
 
             {loadingSimilar ? (

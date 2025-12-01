@@ -23,13 +23,9 @@ const DetailMoviePage = () => {
     const fetchMovie = async () => {
       try {
         const res = await getMovieDetails(movieId);
-        console.log("Movie Details:", res);
-        console.log("Actors data:", res?.actors);
-        console.log("Cast data:", res?.cast);
         setMovie(res);
       } catch (error) {
         errorToast("Error", "Lỗi khi tải thông tin phim.");
-        console.log("Error fetching movie details:", error);
       } finally {
         setLoading(false);
       }

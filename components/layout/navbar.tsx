@@ -53,7 +53,6 @@ export const Navbar = () => {
 
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  console.log("Navbar - isAuthenticated:", isAuthenticated);
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();

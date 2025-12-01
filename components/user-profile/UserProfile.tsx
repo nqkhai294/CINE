@@ -95,7 +95,6 @@ const UserProfile = () => {
       setIsFetchingUser(true);
       try {
         const response = await getCurrentUser(user.id);
-        console.log("API getCurrentUser response:", response);
         if (response.data) {
           const token = localStorage.getItem("token");
           // Merge với user data hiện tại để giữ lại các field khác
@@ -103,7 +102,6 @@ const UserProfile = () => {
             ...user,
             ...response.data,
           };
-          console.log("Updated user:", updatedUser);
           dispatch(login({ user: updatedUser, token: token || "" }));
         }
       } catch (error) {

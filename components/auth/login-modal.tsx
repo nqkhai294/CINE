@@ -85,7 +85,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         turnstileToken
       );
 
-      console.log("Registration response:", res);
       if (res && res.result.status === "ok") {
         successToast("Success", "Đăng ký thành công!");
         setIsRegister(false);
@@ -129,7 +128,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
           })
         );
         successToast("Success", "Đăng nhập thành công!");
-        console.log("Login response:", res);
 
         handleClose();
       } else {
