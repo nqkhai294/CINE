@@ -21,12 +21,20 @@ import {
   FiEdit2,
   FiSave,
   FiX,
+  FiTrash2,
 } from "react-icons/fi";
 import { FaStar } from "react-icons/fa";
 import { successToast, errorToast } from "@/components/ui/toast";
-import { getCurrentUser, updateUserProfile, getMovieDetails } from "@/api/api";
+import {
+  getCurrentUser,
+  updateUserProfile,
+  getMovieDetails,
+  removeFromWatchlist,
+} from "@/api/api";
 import { login } from "@/store/slices/authSlice";
+import { removeFromWatchlist as removeFromWatchlistAction } from "@/store/slices/watchlistSlice";
 import DefaultAvatar from "@/public/default_avt.png";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 interface Movie {
   id: string;
@@ -62,6 +70,13 @@ const UserProfile = () => {
   const [watchlistMovies, setWatchlistMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingUser, setIsFetchingUser] = useState(false);
+
+  // Confirm dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [movieToDelete, setMovieToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const genderOptions = [
     { value: "male", label: "Nam" },
@@ -171,6 +186,25 @@ const UserProfile = () => {
     setIsEditMode(false);
   };
 
+  const openConfirmDialog = (movieId: string, movieTitle: string) => {
+    setMovieToDelete({ id: movieId, title: movieTitle });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!movieToDelete) return;
+
+    try {
+      await removeFromWatchlist(movieToDelete.id);
+      dispatch(removeFromWatchlistAction(movieToDelete.id));
+      successToast("Thành công", "Đã xóa khỏi danh sách xem sau");
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Có lỗi xảy ra khi xóa phim");
+    } finally {
+      setMovieToDelete(null);
+    }
+  };
+
   const MovieCard = ({ movie }: { movie: Movie }) => (
     <Link
       href={`/movie/${movie.id}`}
@@ -210,16 +244,71 @@ const UserProfile = () => {
     </Link>
   );
 
+  const WatchlistMovieCard = ({ movie }: { movie: Movie }) => (
+    <div className="group relative rounded-lg overflow-hidden bg-gray-800/50 hover:bg-gray-700/50 transition-all">
+      <Link href={`/movie/${movie.id}`} className="block">
+        <div className="relative aspect-[2/3]">
+          <Image
+            src={movie.poster_url}
+            alt={movie.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-0 left-0 right-0 p-2">
+              <p className="text-white font-medium text-xs line-clamp-2 mb-1">
+                {movie.title}
+              </p>
+              {/* {movie.tmdb_vote_average && (
+                <div className="flex items-center gap-1">
+                  <FaStar className="text-yellow-500 text-xs" />
+                  <span className="text-white text-xs">
+                    {parseFloat(movie.tmdb_vote_average).toFixed(1)}
+                  </span>
+                </div>
+              )} */}
+            </div>
+          </div>
+        </div>
+        <div className="p-2">
+          <p className="text-white text-xs font-medium line-clamp-1">
+            {movie.title}
+          </p>
+          {movie.release_year && (
+            <p className="text-gray-400 text-xs">{movie.release_year}</p>
+          )}
+        </div>
+      </Link>
+
+      {/* Delete Button */}
+      <div
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Button
+          isIconOnly
+          size="sm"
+          className="bg-red-500/90 hover:bg-red-600"
+          onPress={() => openConfirmDialog(movie.id, movie.title)}
+        >
+          <FiTrash2 className="text-white text-sm" />
+        </Button>
+      </div>
+    </div>
+  );
+
   const MovieSection = ({
     title,
     icon,
     movies,
     emptyMessage,
+    isWatchlist = false,
   }: {
     title: string;
     icon: React.ReactNode;
     movies: Movie[];
     emptyMessage: string;
+    isWatchlist?: boolean;
   }) => (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
@@ -234,9 +323,13 @@ const UserProfile = () => {
 
       {movies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {movies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
+          {movies.map((movie) =>
+            isWatchlist ? (
+              <WatchlistMovieCard key={movie.id} movie={movie} />
+            ) : (
+              <MovieCard key={movie.id} movie={movie} />
+            )
+          )}
         </div>
       ) : (
         <Card className="bg-gray-800/30 border border-gray-700/50">
@@ -489,10 +582,23 @@ const UserProfile = () => {
               icon={<FiBookmark className="text-blue-500 text-lg" />}
               movies={watchlistMovies}
               emptyMessage="Danh sách xem sau của bạn đang trống"
+              isWatchlist={true}
             />
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmDelete}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc chắn muốn xóa "${movieToDelete?.title}" khỏi danh sách xem sau?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        confirmColor="danger"
+      />
     </div>
   );
 };
