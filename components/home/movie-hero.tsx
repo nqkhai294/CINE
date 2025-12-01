@@ -8,6 +8,23 @@ import clsx from "clsx";
 import { Movie } from "@/types";
 import { GENRE_MAP } from "@/config/constants";
 import { useRouter } from "next/navigation";
+import { FiHeart, FiPlus } from "react-icons/fi";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { errorToast, warningToast } from "../ui/toast";
+import {
+  addToFavouritesList,
+  addToWatchlist,
+  removeFromFavouritesList,
+  removeFromWatchlist,
+} from "@/api/api";
+import {
+  addToWatchlist as addToWatchlistAction,
+  removeFromWatchlist as removeFromWatchlistAction,
+} from "@/store/slices/watchlistSlice";
+import {
+  addToFavouritesList as addToFavouritesAction,
+  removeFromFavouritesList as removeFromFavouritesAction,
+} from "@/store/slices/favouritesSlice";
 
 interface MovieHeroProps {
   movies: Movie[];
@@ -15,12 +32,74 @@ interface MovieHeroProps {
 
 export const MovieHero = ({ movies }: MovieHeroProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
+  const [isAddingToFavourites, setIsAddingToFavourites] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
+  const { movieIds: favouritesIds } = useAppSelector(
+    (state) => state.favourites
+  );
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const isInWatchlist = watchlistIds.includes(movies[currentIndex].id);
+  const isInFavourites = favouritesIds.includes(movies[currentIndex].id);
+
   const currentMovie = movies[currentIndex];
 
   const router = useRouter();
 
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index);
+  };
+
+  const handleWatchlistToggle = async () => {
+    if (!isAuthenticated) {
+      warningToast("Warning", "Vui lòng đăng nhập để sử dụng tính năng này.");
+    }
+
+    setIsAddingToWatchlist(true);
+    try {
+      if (isInWatchlist) {
+        // Remove from watchlist
+        await removeFromWatchlist(currentMovie.id);
+        dispatch(removeFromWatchlistAction(currentMovie.id));
+        warningToast("Đã xóa", "Phim đã được xóa khỏi danh sách xem sau.");
+      } else {
+        // Add to watchlist
+        await addToWatchlist(currentMovie.id);
+        dispatch(addToWatchlistAction(currentMovie.id));
+        warningToast("Đã thêm", "Phim đã được thêm vào danh sách xem sau.");
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
+    } finally {
+      setIsAddingToWatchlist(false);
+    }
+  };
+
+  const handleFavouritesToggle = async () => {
+    if (!isAuthenticated) {
+      warningToast("Warning", "Vui lòng đăng nhập để sử dụng tính năng này.");
+    }
+
+    setIsAddingToFavourites(true);
+    try {
+      if (isInFavourites) {
+        // Remove from favourites
+        await removeFromFavouritesList(currentMovie.id);
+        dispatch(removeFromFavouritesAction(currentMovie.id));
+        warningToast("Đã xóa", "Phim đã được xóa khỏi danh sách yêu thích.");
+      } else {
+        await addToFavouritesList(currentMovie.id);
+        dispatch(addToFavouritesAction(currentMovie.id));
+        warningToast("Đã thêm", "Phim đã được thêm vào danh sách yêu thích.");
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
+    } finally {
+      setIsAddingToFavourites(false);
+    }
   };
 
   const onNavigateDetailFilm = (id: string) => {
@@ -141,45 +220,30 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
               <Button
                 size="md"
                 variant="bordered"
-                className="font-medium text-base px-6 text-white border-white/50 hover:bg-white/10"
-                startContent={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                }
+                className={`${
+                  isInFavourites
+                    ? "bg-red-500 hover:bg-red-600 border-red-500"
+                    : "border-gray-600 hover:bg-white/10"
+                } text-white`}
+                onPress={handleFavouritesToggle}
+                isLoading={isAddingToFavourites}
               >
-                Yêu Thích
+                <FiHeart className="text-lg" />
               </Button>
               <Button
                 size="md"
                 variant="bordered"
                 isIconOnly
-                className="text-white border-white/50 hover:bg-white/10"
+                className={`${
+                  isInWatchlist
+                    ? "bg-yellow-500 hover:bg-yellow-600"
+                    : "bg-[#2a3544] hover:bg-[#364152]"
+                } text-white`}
+                onPress={handleWatchlistToggle}
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 16v-4m0-4h.01"
-                  />
-                </svg>
+                <FiPlus
+                  className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`}
+                />
               </Button>
             </div>
           </motion.div>
