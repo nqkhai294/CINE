@@ -10,7 +10,7 @@ import { GENRE_MAP } from "@/config/constants";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiPlus } from "react-icons/fi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { errorToast, warningToast } from "../ui/toast";
+import { errorToast, successToast, warningToast } from "../ui/toast";
 import {
   addToFavouritesList,
   addToWatchlist,
@@ -56,6 +56,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {
       warningToast("Warning", "Vui lòng đăng nhập để sử dụng tính năng này.");
+      return;
     }
 
     setIsAddingToWatchlist(true);
@@ -69,7 +70,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
         // Add to watchlist
         await addToWatchlist(currentMovie.id);
         dispatch(addToWatchlistAction(currentMovie.id));
-        warningToast("Đã thêm", "Phim đã được thêm vào danh sách xem sau.");
+        successToast("Đã thêm", "Phim đã được thêm vào danh sách xem sau.");
       }
     } catch (error: any) {
       errorToast("Lỗi", error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
@@ -81,6 +82,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
   const handleFavouritesToggle = async () => {
     if (!isAuthenticated) {
       warningToast("Warning", "Vui lòng đăng nhập để sử dụng tính năng này.");
+      return;
     }
 
     setIsAddingToFavourites(true);
@@ -93,7 +95,7 @@ export const MovieHero = ({ movies }: MovieHeroProps) => {
       } else {
         await addToFavouritesList(currentMovie.id);
         dispatch(addToFavouritesAction(currentMovie.id));
-        warningToast("Đã thêm", "Phim đã được thêm vào danh sách yêu thích.");
+        successToast("Đã thêm", "Phim đã được thêm vào danh sách yêu thích.");
       }
     } catch (error: any) {
       errorToast("Lỗi", error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
