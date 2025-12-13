@@ -26,6 +26,8 @@ import {
   removeFromFavouritesList,
 } from "@/api/api";
 import { successToast, errorToast, warningToast } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
+import { setCurrentMovie } from "@/store/slices/movieSlice";
 
 interface MovieActionsProps {
   movieId?: string;
@@ -52,6 +54,8 @@ const MovieActions = ({
   const isInWatchlist = watchlistIds.includes(movieId);
   const isInFavourites = favouritesIds.includes(movieId);
 
+  const router = useRouter();
+
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return "";
     const videoId = url.split("v=")[1] || url.split("/").pop();
@@ -60,7 +64,7 @@ const MovieActions = ({
 
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {
-      errorToast("Lỗi", "Vui lòng đăng nhập để thêm vào danh sách");
+      errorToast("Lỗi", "Vui lòng đăng nhập để sử dụng tính năng này");
       return;
     }
 
@@ -84,7 +88,7 @@ const MovieActions = ({
 
   const handleFavouritesToggle = async () => {
     if (!isAuthenticated) {
-      errorToast("Lỗi", "Vui lòng đăng nhập để thích phim");
+      errorToast("Lỗi", "Vui lòng đăng nhập để sử dụng tính năng này");
       return;
     }
 
@@ -106,6 +110,10 @@ const MovieActions = ({
     }
   };
 
+  const handleWatchMovie = () => {
+    router.push(`/watch/${movieId}`);
+  };
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
@@ -114,6 +122,7 @@ const MovieActions = ({
           size="md"
           className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold h-11 px-7 rounded-full transition-all text-sm"
           startContent={<FiPlay className="text-base" />}
+          onPress={() => handleWatchMovie()}
         >
           Xem Ngay
         </Button>

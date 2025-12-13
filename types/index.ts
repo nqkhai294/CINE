@@ -26,6 +26,7 @@ export interface Movie {
   summary: string;
   popularity: number;
   poster_url: string;
+  video_url: string;
   release_date: string;
   release_year: number;
   title: string;

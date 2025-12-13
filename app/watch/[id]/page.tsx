@@ -1,7 +1,344 @@
-import React from "react";
+"use client";
+import PageWrapper from "@/components/layout/page-wrapper";
+import ReactPlayer from "react-player";
+import { Movie } from "@/types";
+import { Button } from "@heroui/button";
+import { Spinner } from "@heroui/spinner";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import {
+  FaArrowLeft,
+  FaExclamationTriangle,
+  FaHeart,
+  FaLightbulb,
+  FaPlus,
+  FaRegHeart,
+  FaShare,
+} from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import {
+  addToFavouritesList,
+  addToWatchlist,
+  getMovieDetails,
+  removeFromFavouritesList,
+  removeFromWatchlist,
+} from "@/api/api";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { errorToast, successToast, warningToast } from "@/components/ui/toast";
+import {
+  addToWatchlist as addToWatchlistAction,
+  removeFromWatchlist as removeFromWatchlistAction,
+} from "@/store/slices/watchlistSlice";
+import {
+  addToFavouritesList as addToFavouritesAction,
+  removeFromFavouritesList as removeFromFavouritesAction,
+} from "@/store/slices/favouritesSlice";
+import { FiHeart, FiPlus } from "react-icons/fi";
+import { Chip } from "@heroui/chip";
 
 const WatchMoviePage = () => {
-  return <div>WatchMoviePage</div>;
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
+  const [isAddingToFavourites, setIsAddingToFavourites] = useState(false);
+
+  const param = useParams();
+  const movieId = param.id as string;
+
+  const dispatch = useAppDispatch();
+  const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
+  const { movieIds: favouritesIds } = useAppSelector(
+    (state) => state.favourites
+  );
+
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const isInWatchlist = watchlistIds.includes(movieId);
+  const isInFavourites = favouritesIds.includes(movieId);
+
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const cachedMovie = useSelector(
+    (state: RootState) => state.movie.currentMovie
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (cachedMovie) {
+        setLoading(false);
+        setMovie(cachedMovie);
+      } else {
+        try {
+          const data = await getMovieDetails(movieId);
+          setMovie(data);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching movie details:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [movieId, cachedMovie]);
+
+  const handleWatchlistToggle = async () => {
+    if (!isAuthenticated) {
+      errorToast("Lỗi", "Vui lòng đăng nhập để sử dụng tính năng này");
+      return;
+    }
+
+    setIsAddingToWatchlist(true);
+    try {
+      if (isInWatchlist) {
+        await removeFromWatchlist(movieId);
+        dispatch(removeFromWatchlistAction(movieId));
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách xem sau");
+      } else {
+        await addToWatchlist(movieId);
+        dispatch(addToWatchlistAction(movieId));
+        successToast("Thành công", "Đã thêm vào danh sách xem sau");
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Có lỗi xảy ra");
+    } finally {
+      setIsAddingToWatchlist(false);
+    }
+  };
+
+  const handleFavouritesToggle = async () => {
+    if (!isAuthenticated) {
+      errorToast("Lỗi", "Vui lòng đăng nhập để sử dụng tính năng này");
+      return;
+    }
+
+    setIsAddingToFavourites(true);
+    try {
+      if (isInFavourites) {
+        await removeFromFavouritesList(movieId);
+        dispatch(removeFromFavouritesAction(movieId));
+        warningToast("Đã xóa", "Đã xóa khỏi danh sách yêu thích");
+      } else {
+        await addToFavouritesList(movieId);
+        dispatch(addToFavouritesAction(movieId));
+        successToast("Thành công", "Đã thêm vào danh sách yêu thích");
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Có lỗi xảy ra");
+    } finally {
+      setIsAddingToFavourites(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageWrapper>
+        <div className="flex  w-full items-center justify-center  text-white">
+          <Spinner size="lg" color="white" />
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (!movie) {
+    return (
+      <PageWrapper>
+        <div className="flex  w-full flex-col items-center justify-center  text-white gap-4">
+          <h1 className="text-2xl">Không tìm thấy phim</h1>
+          <Button onClick={() => router.push("/")} color="primary">
+            Về trang chủ
+          </Button>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  const videoSource = movie.video_url || movie.trailer_url;
+
+  return (
+    <PageWrapper>
+      <div className="min-h-screen text-white">
+        {/* 1.Header */}
+        <header className="flex items-center gap-3 px-4  mb-4 backdrop-blur-sm">
+          <Button
+            isIconOnly
+            variant="light"
+            radius="full"
+            className="text-white hover:bg-white/20 transition-colors flex-shrink-0"
+            onPress={() => router.back()}
+          >
+            <FaArrowLeft size={20} />
+          </Button>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-base sm:text-lg font-bold truncate">
+              Xem phim {movie.title}
+            </p>
+          </div>
+        </header>
+
+        {/* 2.Video Player */}
+        <div className="w-[90vw] rounded-sm bg-black relative aspect-video max-h-[90vh] mx-auto">
+          {videoSource ? (
+            <ReactPlayer
+              src={videoSource}
+              width="100%"
+              height="100%"
+              controls={true}
+              playing={false}
+              pip={false}
+              style={{ backgroundColor: "black" }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-900">
+              <p>Chưa có nguồn phát cho phim này.</p>
+            </div>
+          )}
+        </div>
+
+        {/* 3.Movie Title */}
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+            {/* Trái: Các nút tương tác */}
+            <div className="flex flex-wrap gap-2 md:gap-4">
+              <Button
+                isIconOnly
+                className={`${
+                  isInFavourites
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-[#2a3544] hover:bg-[#364152]"
+                } h-11 w-11 rounded-full transition-all`}
+                size="md"
+                onPress={handleFavouritesToggle}
+                isLoading={isAddingToFavourites}
+              >
+                <FiHeart
+                  className={`text-lg ${isInFavourites ? "text-white fill-current" : "text-white"}`}
+                />
+              </Button>
+
+              <Button
+                isIconOnly
+                className={`${
+                  isInWatchlist
+                    ? "bg-yellow-500 hover:bg-yellow-600"
+                    : "bg-[#2a3544] hover:bg-[#364152]"
+                } h-11 w-11 rounded-full transition-all`}
+                size="md"
+                onPress={handleWatchlistToggle}
+                isLoading={isAddingToWatchlist}
+              >
+                <FiPlus
+                  className={`text-lg ${isInWatchlist ? "text-black" : "text-white"}`}
+                />
+              </Button>
+
+              <Button
+                variant="light"
+                className="text-gray-400 hover:text-white"
+                startContent={<FaLightbulb />}
+              >
+                Rạp phim{" "}
+                <span className="ml-1 bg-gray-700 text-white text-[10px] px-1 rounded">
+                  OFF
+                </span>
+              </Button>
+            </div>
+
+            {/* Phải: Chia sẻ & Báo lỗi */}
+            <div className="flex gap-2">
+              <Button
+                variant="light"
+                className="text-gray-400 hover:text-white"
+                startContent={<FaShare />}
+              >
+                Chia sẻ
+              </Button>
+              <Button
+                variant="light"
+                color="danger"
+                className="hover:bg-danger/10"
+                startContent={<FaExclamationTriangle />}
+              >
+                Báo lỗi
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. MOVIE INFO (Thông tin phim bên dưới) */}
+        <div className="mt-8 flex flex-col md:flex-row gap-8">
+          {/* Poster nhỏ */}
+          <div className="w-32 md:w-48 flex-shrink-0 hidden md:block">
+            <img
+              src={movie.poster_url || ""}
+              alt={movie.title}
+              className="w-full rounded-lg shadow-lg"
+            />
+          </div>
+
+          {/* Chi tiết */}
+          <div className="flex-1">
+            <h2 className="text-3xl font-bold mb-2">{movie.title}</h2>
+            <p className="text-gray-400 mb-4">{movie.title} (Original Title)</p>
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              <Chip color="warning" variant="flat">
+                IMDb {movie.avg_rating?.toFixed(1) || "N/A"}
+              </Chip>
+              <Chip variant="flat" className="bg-white/10 text-white">
+                {movie.release_year}
+              </Chip>
+              {movie.runtime && (
+                <Chip variant="flat" className="bg-white/10 text-white">
+                  {movie.runtime} phút
+                </Chip>
+              )}
+              <Chip color="danger" variant="flat">
+                Full HD
+              </Chip>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-primary">
+                Nội dung phim
+              </h3>
+              <p className="text-gray-300 leading-relaxed text-sm md:text-base">
+                {movie.summary || "Đang cập nhật nội dung..."}
+              </p>
+            </div>
+
+            {movie.genres && (
+              <div className="text-sm text-gray-400">
+                <span className="font-bold text-white">Thể loại: </span>
+                {movie.genres.join(", ")}
+              </div>
+            )}
+          </div>
+
+          {/* Cột bên phải (Rating/Comment placeholder) */}
+          <div className="w-full md:w-1/4 bg-white/5 rounded-xl p-4 h-fit">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-center w-1/2 border-r border-white/10">
+                <FaHeart className="mx-auto text-2xl mb-1 text-gray-400" />
+                <span className="text-xs text-gray-400">Đánh giá</span>
+              </div>
+              <div className="text-center w-1/2">
+                <div className="mx-auto text-2xl mb-1 font-bold text-primary">
+                  9.0
+                </div>
+                <span className="text-xs text-gray-400">Điểm phim</span>
+              </div>
+            </div>
+            <Button fullWidth color="primary" className="font-bold">
+              Đánh giá ngay
+            </Button>
+          </div>
+        </div>
+      </div>
+    </PageWrapper>
+  );
 };
 
 export default WatchMoviePage;

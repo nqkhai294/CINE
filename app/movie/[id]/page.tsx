@@ -8,9 +8,11 @@ import MovieInfo from "@/components/movie/MovieInfo";
 import MovieTabs from "@/components/movie/MovieTabs";
 import TopMoviesWeek from "@/components/movie/TopMoviesWeek";
 import { errorToast } from "@/components/ui/toast";
+import { setCurrentMovie } from "@/store/slices/movieSlice";
 import { Movie } from "@/types";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 
 const DetailMoviePage = () => {
   const param = useParams();
@@ -19,11 +21,14 @@ const DetailMoviePage = () => {
   const [movie, setMovie] = useState<Movie>();
   const [loading, setLoading] = useState(true);
 
+  const dispatch = useDispatch();
+
   useEffect(() => {
     const fetchMovie = async () => {
       try {
         const res = await getMovieDetails(movieId);
         setMovie(res);
+        dispatch(setCurrentMovie(res));
       } catch (error) {
         errorToast("Error", "Lỗi khi tải thông tin phim.");
       } finally {
