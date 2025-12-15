@@ -36,6 +36,9 @@ import {
 } from "@/store/slices/favouritesSlice";
 import { FiHeart, FiPlus } from "react-icons/fi";
 import { Chip } from "@heroui/chip";
+import MovieComments from "@/components/movie/MovieComments";
+import TopMoviesWeek from "@/components/movie/TopMoviesWeek";
+import Image from "next/image";
 
 const WatchMoviePage = () => {
   const router = useRouter();
@@ -267,73 +270,197 @@ const WatchMoviePage = () => {
           </div>
         </div>
 
-        {/* 4. MOVIE INFO (Thông tin phim bên dưới) */}
-        <div className="mt-8 flex flex-col md:flex-row gap-8">
-          {/* Poster nhỏ */}
-          <div className="w-32 md:w-48 flex-shrink-0 hidden md:block">
-            <img
-              src={movie.poster_url || ""}
-              alt={movie.title}
-              className="w-full rounded-lg shadow-lg"
-            />
-          </div>
-
-          {/* Chi tiết */}
-          <div className="flex-1">
-            <h2 className="text-3xl font-bold mb-2">{movie.title}</h2>
-            <p className="text-gray-400 mb-4">{movie.title} (Original Title)</p>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              <Chip color="warning" variant="flat">
-                IMDb {movie.avg_rating?.toFixed(1) || "N/A"}
-              </Chip>
-              <Chip variant="flat" className="bg-white/10 text-white">
-                {movie.release_year}
-              </Chip>
-              {movie.runtime && (
-                <Chip variant="flat" className="bg-white/10 text-white">
-                  {movie.runtime} phút
-                </Chip>
-              )}
-              <Chip color="danger" variant="flat">
-                Full HD
-              </Chip>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2 text-primary">
-                Nội dung phim
-              </h3>
-              <p className="text-gray-300 leading-relaxed text-sm md:text-base">
-                {movie.summary || "Đang cập nhật nội dung..."}
-              </p>
-            </div>
-
-            {movie.genres && (
-              <div className="text-sm text-gray-400">
-                <span className="font-bold text-white">Thể loại: </span>
-                {movie.genres.join(", ")}
+        {/* 4. MOVIE INFO & RATING */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left: Movie Info */}
+            <div className="flex-1 flex gap-6">
+              {/* Poster */}
+              <div className="w-32 md:w-48 flex-shrink-0">
+                <img
+                  src={movie.poster_url || ""}
+                  alt={movie.title}
+                  className="w-full rounded-lg shadow-2xl object-cover"
+                />
               </div>
-            )}
-          </div>
 
-          {/* Cột bên phải (Rating/Comment placeholder) */}
-          <div className="w-full md:w-1/4 bg-white/5 rounded-xl p-4 h-fit">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-center w-1/2 border-r border-white/10">
-                <FaHeart className="mx-auto text-2xl mb-1 text-gray-400" />
-                <span className="text-xs text-gray-400">Đánh giá</span>
-              </div>
-              <div className="text-center w-1/2">
-                <div className="mx-auto text-2xl mb-1 font-bold text-primary">
-                  9.0
+              {/* Details */}
+              <div className="flex-1">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  {movie.title}
+                </h2>
+                <p className="text-gray-400 mb-4">
+                  {movie.original_title || movie.title}
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Chip
+                    size="sm"
+                    className="font-semibold text-xs rounded-md bg-black border-1 border-amber-400"
+                    startContent={
+                      <span className="text-xs text-amber-400 mr-1">IMDb</span>
+                    }
+                  >
+                    <span className="text-white">
+                      {movie.tmdb_vote_average ||
+                        movie.avg_rating?.toFixed(1) ||
+                        "N/A"}
+                    </span>
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="bordered"
+                    className="text-white border-white/50 text-xs rounded-md"
+                  >
+                    T18
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="bordered"
+                    className="text-white border-white/50 text-xs rounded-md"
+                  >
+                    {movie.release_year}
+                  </Chip>
+                  {movie.runtime && (
+                    <Chip
+                      size="sm"
+                      variant="bordered"
+                      className="text-white border-white/50 text-xs rounded-md"
+                    >
+                      {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
+                    </Chip>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400">Điểm phim</span>
+
+                {/* Genre Tags */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {movie.genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="px-2 py-0.5 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white"
+                    >
+                      {genre || "Khác"}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-white pb-2">Summary:</p>
+                  <p className="text-gray-300 leading-relaxed text-sm md:text-base">
+                    {movie.summary || "Đang cập nhật nội dung..."}
+                  </p>
+                </div>
+
+                {/* Additional Info */}
+                <div className="space-y-2">
+                  {movie.runtime && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-white font-semibold text-sm whitespace-nowrap">
+                        Thời lượng:
+                      </span>
+                      <span className="text-gray-300 text-sm">
+                        {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
+                      </span>
+                    </div>
+                  )}
+
+                  {movie.original_language && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-white font-semibold text-sm whitespace-nowrap">
+                        Quốc gia:
+                      </span>
+                      <span className="text-gray-300 text-sm">
+                        {movie.original_language.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {movie.directors && movie.directors.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-white font-semibold text-sm whitespace-nowrap">
+                        Đạo diễn:
+                      </span>
+                      <span className="text-gray-300 text-sm">
+                        {movie.directors.map((d) => d.name).join(", ")}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <Button fullWidth color="primary" className="font-bold">
-              Đánh giá ngay
-            </Button>
+
+            {/* Right: Rating Box */}
+            <div className="w-full lg:w-80 bg-white/5 rounded-xl p-6 h-fit">
+              <div className="flex items-center justify-between mb-6">
+                <div className="text-center flex-1 border-r border-white/10">
+                  <FaHeart className="mx-auto text-2xl mb-1 text-gray-400" />
+                  <span className="text-xs text-gray-400">Đánh giá</span>
+                </div>
+                <div className="text-center flex-1">
+                  <div className="mx-auto text-3xl mb-1 font-bold text-primary">
+                    {movie.avg_rating?.toFixed(1) || "9.0"}
+                  </div>
+                  <span className="text-xs text-gray-400">Điểm phim</span>
+                </div>
+              </div>
+              <Button fullWidth color="primary" className="font-bold">
+                Đánh giá ngay
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. COMMENTS & SIDEBAR */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left: Comments Section */}
+            <div className="flex-1">
+              <MovieComments movieId={movieId} />
+            </div>
+
+            {/* Right: Actors & Recommendations */}
+            <div className="w-full lg:w-80 space-y-8">
+              {/* Actors Section */}
+              {movie.actors && movie.actors.length > 0 && (
+                <div className="bg-white/5 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">
+                    Diễn viên
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {movie.actors.slice(0, 6).map((actor) => (
+                      <div
+                        key={actor.id}
+                        className="flex flex-col items-center group cursor-pointer"
+                      >
+                        {actor.profile_url ? (
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden mb-2 ring-2 ring-gray-700 group-hover:ring-yellow-500 transition-all">
+                            <Image
+                              src={actor.profile_url}
+                              alt={actor.name}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-2 ring-2 ring-gray-700 group-hover:ring-yellow-500 transition-all">
+                            <span className="text-gray-400 text-lg font-bold">
+                              {actor.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-white text-xs text-center line-clamp-2 w-full">
+                          {actor.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Movies Section */}
+              <TopMoviesWeek />
+            </div>
           </div>
         </div>
       </div>

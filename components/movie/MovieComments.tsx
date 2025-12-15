@@ -8,6 +8,7 @@ import { Textarea } from "@heroui/input";
 import { FiMessageCircle } from "react-icons/fi";
 import { useAppSelector } from "@/store/hooks";
 import DefaultAvatar from "@/public/default_avt.png";
+import { LoginModal } from "../auth/login-modal";
 
 interface MovieCommentsProps {
   movieId?: string;
@@ -26,9 +27,11 @@ interface Comment {
 const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  
+
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
+
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const handleSubmit = () => {
     if (!comment.trim()) return;
@@ -61,10 +64,12 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
         variant="underlined"
         color="warning"
         classNames={{
-          tabList: "gap-6 w-full relative rounded-none p-0 border-b border-gray-800",
+          tabList:
+            "gap-6 w-full relative rounded-none p-0 border-b border-gray-800",
           cursor: "w-full bg-yellow-500",
           tab: "max-w-fit px-4 h-12",
-          tabContent: "group-data-[selected=true]:text-white text-gray-400 font-medium",
+          tabContent:
+            "group-data-[selected=true]:text-white text-gray-400 font-medium",
         }}
       >
         <Tab key="comments" title="Bình luận">
@@ -85,13 +90,13 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                   maxLength={1000}
                   description={`${comment.length} / 1000`}
                 />
-                
+
                 <div className="flex items-center justify-between mt-4">
                   <label className="flex items-center gap-2 text-gray-400 text-sm cursor-pointer">
                     <input type="checkbox" className="rounded" />
                     <span>Tiết lộ?</span>
                   </label>
-                  
+
                   <Button
                     color="warning"
                     className="font-semibold"
@@ -105,7 +110,14 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
             ) : (
               <div className="bg-[#1e2a3a] rounded-lg p-8 text-center">
                 <p className="text-gray-400 mb-4">
-                  Vui lòng <span className="text-yellow-500 underline cursor-pointer">đăng nhập</span> để tham gia bình luận.
+                  Vui lòng{" "}
+                  <span
+                    className="text-yellow-500 underline cursor-pointer"
+                    onClick={() => setLoginModalOpen(true)}
+                  >
+                    đăng nhập
+                  </span>{" "}
+                  để tham gia bình luận.
                 </p>
               </div>
             )}
@@ -119,8 +131,12 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                       <Avatar src={cmt.user.avatar} size="md" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-semibold text-white">{cmt.user.name}</span>
-                          <span className="text-gray-500 text-sm">• {cmt.createdAt}</span>
+                          <span className="font-semibold text-white">
+                            {cmt.user.name}
+                          </span>
+                          <span className="text-gray-500 text-sm">
+                            • {cmt.createdAt}
+                          </span>
                         </div>
                         <p className="text-gray-300">{cmt.content}</p>
                       </div>
@@ -144,6 +160,11 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
           </div>
         </Tab>
       </Tabs>
+
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+      />
     </div>
   );
 };
