@@ -17,6 +17,7 @@ interface MovieCommentsProps {
 interface Comment {
   id: number;
   user: {
+    id: number;
     name: string;
     avatar: string;
   };
@@ -39,6 +40,7 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
     const newComment: Comment = {
       id: Date.now(),
       user: {
+        id: user?.id || 0,
         name: user?.username || "Anonymous",
         avatar: user?.avatar || DefaultAvatar.src,
       },

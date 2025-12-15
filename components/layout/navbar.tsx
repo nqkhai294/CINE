@@ -39,6 +39,7 @@ import { SearchIcon, Logo } from "@/components/icons";
 import { LoginModal } from "@/components/auth/login-modal";
 
 import { IoPerson } from "react-icons/io5";
+import { HiMenuAlt3, HiX } from "react-icons/hi";
 import Image from "next/image";
 import AppLogo from "@/public/logo.png";
 
@@ -50,6 +51,7 @@ export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -96,10 +98,23 @@ export const Navbar = () => {
           backdropFilter: "none",
         }}
       >
-        <NavbarContent className="flex-grow" justify="start">
+        {/* Mobile Menu Button - Left */}
+        <NavbarContent className="lg:hidden" justify="start">
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="text-white"
+          >
+            {mobileMenuOpen ? <HiX size={24} /> : <HiMenuAlt3 size={24} />}
+          </Button>
+        </NavbarContent>
+
+        {/* Logo - Center on mobile, left on desktop */}
+        <NavbarContent className="flex-grow lg:flex-grow-0" justify="center">
           <NavbarBrand as="li" className="gap-2 flex-shrink-0">
             <NextLink
-              className="flex justify-start items-center gap-2"
+              className="flex items-center justify-center gap-2"
               href="/"
             >
               <Image
@@ -107,16 +122,19 @@ export const Navbar = () => {
                 alt="logo"
                 width={120}
                 height={70}
-                className="w-[120px] h-[70px] object-contain flex-shrink-0"
+                className="w-[100px] h-[60px] sm:w-[120px] sm:h-[70px] object-contain flex-shrink-0"
               />
             </NextLink>
           </NavbarBrand>
+        </NavbarContent>
 
+        {/* Search Bar - Desktop only */}
+        <NavbarContent className="hidden lg:flex flex-grow" justify="start">
           <div className="flex mx-4 w-[230px] flex-shrink-0">
             <SearchBar />
           </div>
 
-          <ul className="hidden lg:flex gap-4 justify-start text-sm flex-shrink-0 whitespace-nowrap ml-2">
+          <ul className="flex gap-4 justify-start text-sm flex-shrink-0 whitespace-nowrap ml-2">
             {siteConfig.navItems.map((item) => (
               <NavbarItem key={item.href}>
                 <NextLink
@@ -130,6 +148,7 @@ export const Navbar = () => {
           </ul>
         </NavbarContent>
 
+        {/* User Avatar/Login - Right */}
         <NavbarContent className="flex-shrink-0" justify="end">
           <NavbarItem className="flex gap-3 items-center">
             {isAuthenticated ? (
@@ -171,19 +190,48 @@ export const Navbar = () => {
               </Dropdown>
             ) : (
               <Button
-                className="text-sm font-semibold text-black bg-white/90 h-10 rounded-full"
+                className="text-xs sm:text-sm font-semibold text-black bg-white/90 h-8 sm:h-10 rounded-full px-3 sm:px-4"
                 color="default"
                 variant="flat"
-                startContent={<IoPerson size={16} />}
+                startContent={
+                  <IoPerson size={16} className="hidden sm:block" />
+                }
                 onPress={() => setLoginModalOpen(true)}
                 size="sm"
               >
-                Thành viên
+                <span className="hidden sm:inline">Thành viên</span>
+                <span className="sm:hidden">Login</span>
               </Button>
             )}
           </NavbarItem>
         </NavbarContent>
       </HeroUINavbar>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="fixed top-[60px] left-0 right-0 bg-[#0a0e17] z-40 lg:hidden shadow-xl">
+          <div className="px-4 py-4 space-y-4">
+            {/* Search Bar Mobile */}
+            <div className="w-full">
+              <SearchBar />
+            </div>
+
+            {/* Navigation Links */}
+            <div className="flex flex-col space-y-2">
+              {siteConfig.navItems.map((item) => (
+                <NextLink
+                  key={item.href}
+                  className="text-white/90 hover:text-white hover:bg-white/10 transition-colors text-sm font-normal py-3 px-4 rounded-lg"
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </NextLink>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <LoginModal
         isOpen={loginModalOpen}

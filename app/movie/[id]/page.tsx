@@ -68,23 +68,42 @@ const DetailMoviePage = () => {
           {/* Cột trái */}
           <div className="space-y-8">
             <MovieInfo movie={movie} />
-            <TopMoviesWeek />
+            {/* MovieActions on mobile */}
+            <div className="lg:hidden">
+              <MovieActions
+                movieId={movie.id}
+                trailerUrl={movie.trailer_url}
+                avgRating={
+                  movie.tmdb_vote_average
+                    ? parseFloat(movie.tmdb_vote_average)
+                    : undefined
+                }
+              />
+            </div>
           </div>
 
           {/* Cột phải */}
           <div className="lg:col-span-2 space-y-8">
-            <MovieActions
-              movieId={movie.id}
-              trailerUrl={movie.trailer_url}
-              avgRating={
-                movie.tmdb_vote_average
-                  ? parseFloat(movie.tmdb_vote_average)
-                  : undefined
-              }
-            />
+            {/* MovieActions on desktop only */}
+            <div className="hidden lg:block">
+              <MovieActions
+                movieId={movie.id}
+                trailerUrl={movie.trailer_url}
+                avgRating={
+                  movie.tmdb_vote_average
+                    ? parseFloat(movie.tmdb_vote_average)
+                    : undefined
+                }
+              />
+            </div>
             <MovieTabs movieId={movie.id} actors={movie.actors} />
             <MovieComments movieId={movie.id} />
           </div>
+        </div>
+
+        {/* Top Movies Week - Below everything */}
+        <div className="mt-8">
+          <TopMoviesWeek />
         </div>
       </div>
     </PageWrapper>
