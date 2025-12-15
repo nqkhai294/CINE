@@ -418,3 +418,37 @@ export const getFavouritesListCount = async () => {
     return 0;
   }
 };
+
+// Comments API
+
+/**
+ * Add comment to a movie
+ */
+export const addCommentToMovie = async (request: any) => {
+  try {
+    const res = await apiClient.post("/reviews", request);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error adding comment:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get all comments for a movie
+ */
+export const getCommentsForMovie = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.get(`/reviews/movie/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching comments:", error);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};

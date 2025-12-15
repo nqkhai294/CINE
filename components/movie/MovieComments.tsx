@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Avatar } from "@heroui/avatar";
 import { Button } from "@heroui/button";
@@ -9,12 +9,14 @@ import { FiMessageCircle } from "react-icons/fi";
 import { useAppSelector } from "@/store/hooks";
 import DefaultAvatar from "@/public/default_avt.png";
 import { LoginModal } from "../auth/login-modal";
+import { addCommentToMovie, getCommentsForMovie } from "@/api/api";
+import { errorToast, successToast } from "../ui/toast";
 
 interface MovieCommentsProps {
   movieId?: string;
 }
 
-interface Comment {
+export interface Comment {
   id: number;
   user: {
     id: number;
@@ -34,30 +36,43 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
 
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    handleGetComments();
+  }, []);
+
+  const handleGetComments = async () => {
+    const res = await getCommentsForMovie(movieId);
+    console.log(res);
+    setComments(res.data);
+  };
+
+  const handleSubmit = async () => {
     if (!comment.trim()) return;
 
-    const newComment: Comment = {
-      id: Date.now(),
-      user: {
-        id: user?.id || 0,
-        name: user?.username || "Anonymous",
-        avatar: user?.avatar || DefaultAvatar.src,
-      },
-      content: comment,
-      createdAt: "Vừa xong",
+    const newComment: any = {
+      movieId: movieId,
+      content: comment.trim(),
     };
 
-    setComments([newComment, ...comments]);
-    setComment("");
+    try {
+      const res = await addCommentToMovie(newComment);
+      setComment("");
+      handleGetComments();
+      successToast("Success", "Bình luận đã được gửi.");
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      errorToast("Error", "Lỗi khi gửi bình luận.");
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header with icon */}
+      {/* Header with icon and count */}
       <div className="flex items-center gap-3">
         <FiMessageCircle className="text-xl text-white" />
-        <h2 className="text-xl font-bold text-white">Bình luận</h2>
+        <h2 className="text-xl font-bold text-white">
+          Bình luận ({comments.length})
+        </h2>
       </div>
 
       {/* Tabs for Comments and Reviews */}
@@ -79,6 +94,13 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
             {/* Comment Form */}
             {isAuthenticated ? (
               <div className="bg-[#1e2a3a] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Avatar src={user?.avatar || DefaultAvatar.src} size="md" />
+                  <span className="text-gray-400 text-sm">
+                    Bình luận với tên {user?.username}
+                  </span>
+                </div>
+
                 <Textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
