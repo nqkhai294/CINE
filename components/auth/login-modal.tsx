@@ -145,6 +145,13 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
     }
   };
 
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !isLoading) {
+      handleSubmit();
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -191,6 +198,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -206,6 +214,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -221,6 +230,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -236,6 +246,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -254,6 +265,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -269,6 +281,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                   labelPlacement="inside"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white",
                     label: "text-gray-400",
@@ -309,6 +322,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
             <Button
               className="w-full bg-yellow-500 text-black font-semibold hover:bg-yellow-600"
               onPress={handleSubmit}
+              isLoading={isLoading}
             >
               {isRegister ? "Đăng ký" : "Đăng nhập"}
             </Button>
