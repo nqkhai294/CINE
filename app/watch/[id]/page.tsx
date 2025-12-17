@@ -11,6 +11,7 @@ import {
   FaExclamationTriangle,
   FaHeart,
   FaLightbulb,
+  FaPlay,
   FaPlus,
   FaRegHeart,
   FaShare,
@@ -45,6 +46,7 @@ const WatchMoviePage = () => {
   const [loading, setLoading] = useState(true);
   const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
   const [isAddingToFavourites, setIsAddingToFavourites] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const param = useParams();
   const movieId = param.id as string;
@@ -184,15 +186,29 @@ const WatchMoviePage = () => {
         {/* 2.Video Player */}
         <div className="w-[90vw] rounded-sm bg-black relative aspect-video max-h-[90vh] mx-auto">
           {videoSource ? (
-            <ReactPlayer
-              src={videoSource}
-              width="100%"
-              height="100%"
-              controls={true}
-              playing={false}
-              pip={false}
-              style={{ backgroundColor: "black" }}
-            />
+            <>
+              <ReactPlayer
+                src={videoSource}
+                width="100%"
+                height="100%"
+                controls={true}
+                playing={isPlaying}
+                pip={false}
+                style={{ backgroundColor: "black" }}
+              />
+
+              {/* Play Button Overlay */}
+              {!isPlaying && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer group"
+                  onClick={() => setIsPlaying(true)}
+                >
+                  <div className="w-20 h-20 flex items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-600 transition-all shadow-2xl group-hover:scale-110">
+                    <FaPlay className="text-black text-3xl ml-1" />
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-900">
               <p>Chưa có nguồn phát cho phim này.</p>
@@ -390,36 +406,26 @@ const WatchMoviePage = () => {
             </div>
 
             {/* Right: Rating Box */}
-            <div className="w-full lg:w-80 bg-white/5 rounded-xl p-6 h-fit">
-              <div className="flex items-center justify-between mb-6">
-                <div className="text-center flex-1 border-r border-white/10">
-                  <FaHeart className="mx-auto text-2xl mb-1 text-gray-400" />
-                  <span className="text-xs text-gray-400">Đánh giá</span>
-                </div>
-                <div className="text-center flex-1">
-                  <div className="mx-auto text-3xl mb-1 font-bold text-primary">
-                    {movie.avg_rating?.toFixed(1) || "9.0"}
+            <div className="w-full lg:w-80 space-y-6">
+              {/* Rating Box */}
+              <div className="bg-white/5 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-center flex-1 border-r border-white/10">
+                    <FaHeart className="mx-auto text-2xl mb-1 text-gray-400" />
+                    <span className="text-xs text-gray-400">Đánh giá</span>
                   </div>
-                  <span className="text-xs text-gray-400">Điểm phim</span>
+                  <div className="text-center flex-1">
+                    <div className="mx-auto text-3xl mb-1 font-bold text-primary">
+                      {movie.avg_rating?.toFixed(1) || "9.0"}
+                    </div>
+                    <span className="text-xs text-gray-400">Điểm phim</span>
+                  </div>
                 </div>
+                <Button fullWidth color="primary" className="font-bold">
+                  Đánh giá ngay
+                </Button>
               </div>
-              <Button fullWidth color="primary" className="font-bold">
-                Đánh giá ngay
-              </Button>
-            </div>
-          </div>
-        </div>
 
-        {/* 5. COMMENTS & SIDEBAR */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left: Comments Section */}
-            <div className="flex-1">
-              <MovieComments movieId={movieId} />
-            </div>
-
-            {/* Right: Actors & Recommendations */}
-            <div className="w-full lg:w-80 space-y-8">
               {/* Actors Section */}
               {movie.actors && movie.actors.length > 0 && (
                 <div className="bg-white/5 rounded-xl p-6">
@@ -457,9 +463,26 @@ const WatchMoviePage = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
 
+        {/* 5. COMMENTS & SIDEBAR */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left: Comments Section */}
+            <div className="flex-1">
+              <MovieComments movieId={movieId} />
+            </div>
+
+            {/* Right: Recommendations */}
+            <div className="w-full lg:w-80">
               {/* Similar Movies Section */}
-              <SimilarMoviesSection movieId={movieId} title="Phim đề xuất" />
+              <SimilarMoviesSection
+                movieId={movieId}
+                title="Phim đề xuất"
+                layout="vertical"
+              />
             </div>
           </div>
         </div>

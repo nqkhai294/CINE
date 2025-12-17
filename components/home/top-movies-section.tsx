@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardFooter } from "@heroui/card";
 import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
@@ -14,8 +14,12 @@ interface TopMoviesSectionProps {
 }
 
 export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
-  const topMovies = movies.slice(0, 5);
+  const topMovies = movies.slice(0, 10);
   const [hoveredMovie, setHoveredMovie] = useState<number | null>(null);
+
+  useEffect(() => {
+    console.log("topMovies updated:", topMovies);
+  }, [topMovies]);
 
   return (
     <section className="w-full py-8 sm:py-10 md:py-12 px-4 sm:px-6 md:px-12 lg:px-16 bg-[#0a0e17]">
@@ -102,7 +106,11 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
                   </span>
                   <span>{movie.release_year}</span>
                   <span>•</span>
-                  <span>1h 48m</span>
+                  <span>
+                    {movie.runtime
+                      ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
+                      : "N/A"}
+                  </span>
                 </div>
               </CardFooter>
 
