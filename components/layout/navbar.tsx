@@ -157,7 +157,7 @@ export const Navbar = () => {
                   <Avatar
                     as="button"
                     className="transition-transform cursor-pointer hover:scale-110 ring-2 ring-offset-2 ring-white/30 hover:ring-yellow-500"
-                    src={user?.avatar || DefaultAvatar.src}
+                    src={user?.avatar_url || DefaultAvatar.src}
                     size="md"
                     isBordered
                     color="warning"

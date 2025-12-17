@@ -37,7 +37,7 @@ import {
 import { FiHeart, FiPlus } from "react-icons/fi";
 import { Chip } from "@heroui/chip";
 import MovieComments from "@/components/movie/MovieComments";
-import TopMoviesWeek from "@/components/movie/TopMoviesWeek";
+import SimilarMoviesSection from "@/components/movie/SimilarMoviesSection";
 import Image from "next/image";
 
 const WatchMoviePage = () => {
@@ -458,8 +458,8 @@ const WatchMoviePage = () => {
                 </div>
               )}
 
-              {/* Top Movies Section */}
-              <TopMoviesWeek />
+              {/* Similar Movies Section */}
+              <SimilarMoviesSection movieId={movieId} title="Phim đề xuất" />
             </div>
           </div>
         </div>

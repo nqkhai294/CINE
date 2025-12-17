@@ -261,6 +261,22 @@ export const updateUserProfile = async (profileData: {
   }
 };
 
+/**
+ * Update user avatar
+ */
+export const updateUserAvatar = async (avatar_url: string) => {
+  try {
+    const res = await apiClient.put("/users/avatar", { avatar_url });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error updating avatar:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
 // Watchlist API
 
 /**

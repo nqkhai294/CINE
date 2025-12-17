@@ -31,12 +31,14 @@ import {
   getMovieDetails,
   removeFromWatchlist,
   removeFromFavouritesList,
+  updateUserAvatar,
 } from "@/api/api";
 import { login } from "@/store/slices/authSlice";
 import { removeFromWatchlist as removeFromWatchlistAction } from "@/store/slices/watchlistSlice";
 import { removeFromFavouritesList as removeFromFavouritesAction } from "@/store/slices/favouritesSlice";
 import DefaultAvatar from "@/public/default_avt.png";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import AvatarUploader from "@/components/user-profile/AvatarUploader";
 
 interface Movie {
   id: string;
@@ -59,6 +61,7 @@ const UserProfile = () => {
   const [bio, setBio] = useState(user?.bio || "");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>(user?.gender || "");
+  const [avatar, setAvatar] = useState<string>(user?.avatar_url || "");
 
   // Helper function to convert date to yyyy-MM-dd format
   const formatDateForInput = (
@@ -81,6 +84,7 @@ const UserProfile = () => {
       setBio(user.bio || "");
       setDateOfBirth(formatDateForInput(user.date_of_birth));
       setGender(user.gender || "");
+      setAvatar(user.avatar_url || "");
     }
   }, [user]);
 
@@ -98,36 +102,39 @@ const UserProfile = () => {
     title: string;
   } | null>(null);
 
+  // Avatar upload state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
   const genderOptions = [
     { value: "male", label: "Nam" },
     { value: "female", label: "Nữ" },
     { value: "other", label: "Khác" },
   ];
 
-  useEffect(() => {
-    // Fetch current user data from API
-    const fetchUserData = async () => {
-      if (!user?.id) return;
+  // Fetch current user data from API
+  const fetchUserData = async () => {
+    if (!user?.id) return;
 
-      setIsFetchingUser(true);
-      try {
-        const response = await getCurrentUser(user.id);
-        if (response.data) {
-          const token = localStorage.getItem("token");
-          // Merge với user data hiện tại để giữ lại các field khác
-          const updatedUser = {
-            ...user,
-            ...response.data,
-          };
-          dispatch(login({ user: updatedUser, token: token || "" }));
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      } finally {
-        setIsFetchingUser(false);
+    setIsFetchingUser(true);
+    try {
+      const response = await getCurrentUser(user.id);
+      if (response.data) {
+        const token = localStorage.getItem("token");
+        // Merge với user data hiện tại để giữ lại các field khác
+        const updatedUser = {
+          ...user,
+          ...response.data,
+        };
+        dispatch(login({ user: updatedUser, token: token || "" }));
       }
-    };
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setIsFetchingUser(false);
+    }
+  };
 
+  useEffect(() => {
     // Luôn fetch user data khi vào trang profile để có thông tin mới nhất
     if (user?.id) {
       fetchUserData();
@@ -223,6 +230,30 @@ const UserProfile = () => {
     setDateOfBirth(user?.date_of_birth || "");
     setGender(user?.gender || "");
     setIsEditMode(false);
+  };
+
+  const handleAvatarUploadSuccess = async (url: string) => {
+    setIsUploadingAvatar(true);
+    try {
+      // Call API to update avatar
+      const response = await updateUserAvatar(url);
+
+      // Update Redux store with new avatar
+      if (response) {
+        // Update local state ngay lập tức để UI responsive
+        setAvatar(url);
+
+        successToast("Thành công", "Cập nhật avatar thành công!");
+
+        // Refresh user data từ server để đảm bảo đồng bộ
+        await fetchUserData();
+      }
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Cập nhật avatar thất bại!");
+      console.error("Error updating avatar:", error);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   const openConfirmDialog = (
@@ -447,12 +478,26 @@ const UserProfile = () => {
 
                   {/* Avatar */}
                   <div className="flex justify-center mb-4">
-                    <Avatar
-                      src={user?.avatar || DefaultAvatar.src}
-                      className="w-32 h-32 text-large ring-4 ring-yellow-500/30"
-                      isBordered
-                      color="warning"
-                    />
+                    <div className="relative group">
+                      <Avatar
+                        src={avatar || DefaultAvatar.src}
+                        className="w-32 h-32 text-large ring-4 ring-yellow-500/30"
+                        isBordered
+                        color="warning"
+                      />
+                      {/* Camera overlay - chỉ hiện khi hover */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <AvatarUploader
+                          onUploadSuccess={handleAvatarUploadSuccess}
+                        />
+                      </div>
+                      {/* Loading spinner khi đang upload */}
+                      {isUploadingAvatar && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-full">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Display Name */}

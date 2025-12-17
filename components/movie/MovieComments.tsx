@@ -95,7 +95,10 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
             {isAuthenticated ? (
               <div className="bg-[#1e2a3a] rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Avatar src={user?.avatar || DefaultAvatar.src} size="md" />
+                  <Avatar
+                    src={user?.avatar_url || DefaultAvatar.src}
+                    size="md"
+                  />
                   <span className="text-gray-400 text-sm">
                     Bình luận với tên {user?.username}
                   </span>
