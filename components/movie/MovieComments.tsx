@@ -58,10 +58,10 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
       const res = await addCommentToMovie(newComment);
       setComment("");
       handleGetComments();
-      successToast("Success", "Bình luận đã được gửi.");
+      successToast("Thành công", "Bình luận đã được gửi.");
     } catch (error) {
       console.error("Error submitting comment:", error);
-      errorToast("Error", "Lỗi khi gửi bình luận.");
+      errorToast("Lỗi", "Lỗi khi gửi bình luận.");
     }
   };
 

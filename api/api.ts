@@ -28,16 +28,34 @@ export const setAuthToken = (token: string | null) => {
  * Tự động logout khi backend trả về 401
  */
 let logoutCallback: (() => void) | null = null;
+let isLoggingOut = false; // Flag để tránh hiện nhiều toast khi logout
 
 export const setLogoutCallback = (callback: () => void) => {
   logoutCallback = callback;
+};
+
+export const setLoggingOut = (value: boolean) => {
+  isLoggingOut = value;
 };
 
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     // Nếu backend trả về 401 (Unauthorized) - token hết hạn
-    if (error.response && error.response.status === 401) {
+    // CHỈ xử lý khi KHÔNG PHẢI logout chủ động
+    if (error.response && error.response.status === 401 && !isLoggingOut) {
+      // Kiểm tra xem có phải lỗi từ login/register không
+      const isAuthEndpoint =
+        error.config?.url?.includes("/auth/login") ||
+        error.config?.url?.includes("/auth/register");
+
+      // Nếu là auth endpoint (login/register sai), không redirect
+      // Để component tự xử lý hiển thị lỗi
+      if (isAuthEndpoint) {
+        return Promise.reject(error);
+      }
+
+      // Còn lại là token hết hạn thật sự
       // Clear localStorage
       localStorage.removeItem("token");
       localStorage.removeItem("user");

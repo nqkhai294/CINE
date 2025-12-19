@@ -102,9 +102,7 @@ const DetailMoviePage = () => {
         </div>
 
         {/* Top Movies Week - Below everything */}
-        <div className="mt-8">
-          <TopMoviesWeek />
-        </div>
+        <div className="mt-8">{/* <TopMoviesWeek /> */}</div>
       </div>
     </PageWrapper>
   );

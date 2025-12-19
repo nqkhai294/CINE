@@ -44,8 +44,9 @@ import Image from "next/image";
 import AppLogo from "@/public/logo.png";
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { logout } from "@/store/slices/authSlice";
+import { login, logout } from "@/store/slices/authSlice";
 import { SearchBar } from "@/components/layout/search-bar";
+import { getCurrentUser } from "@/api/api";
 
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -71,6 +72,31 @@ export const Navbar = () => {
       router.push("/");
     }
   };
+
+  useEffect(() => {
+    const getUser = async () => {
+      if (user) {
+        const response = await getCurrentUser(user.id);
+        if (response.data) {
+          const token = localStorage.getItem("token");
+
+          const updatedUser = {
+            ...user,
+            ...response.data,
+          };
+
+          dispatch(
+            login({
+              user: updatedUser,
+              token: token || "",
+            })
+          );
+        }
+      }
+    };
+
+    getUser();
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => {

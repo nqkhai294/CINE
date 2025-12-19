@@ -44,7 +44,7 @@ export interface User {
   user_id: number;
   username: string;
   email: string;
-  avatar: string;
+  avatar_url: string;
   bio?: string;
   date_of_birth?: string;
   gender?: string;

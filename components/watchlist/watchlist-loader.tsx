@@ -22,7 +22,7 @@ export default function WatchlistLoader() {
         return;
       }
 
-      // Chỉ load nếu watchlist chưa có data
+      // CHỈ load khi đã authenticated VÀ watchlist chưa có data
       if (movieIds.length === 0) {
         dispatch(setLoading(true));
         try {
@@ -32,6 +32,7 @@ export default function WatchlistLoader() {
           dispatch(setWatchlist(ids));
         } catch (error) {
           console.error("Error loading watchlist:", error);
+          // Không cần xử lý 401 ở đây, interceptor đã xử lý
         } finally {
           dispatch(setLoading(false));
         }
@@ -39,8 +40,7 @@ export default function WatchlistLoader() {
     };
 
     loadWatchlist();
-  }, [isAuthenticated, dispatch, movieIds.length]);
+  }, [isAuthenticated, dispatch]); // Bỏ movieIds.length khỏi deps để tránh loop
 
   return null; // Component này không render gì
 }
-

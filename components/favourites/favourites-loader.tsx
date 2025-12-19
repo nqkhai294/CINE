@@ -22,7 +22,7 @@ export default function FavouritesLoader() {
         return;
       }
 
-      // Chỉ load nếu favourites chưa có data
+      // CHỈ load khi đã authenticated VÀ favourites chưa có data
       if (movieIds.length === 0) {
         dispatch(setLoading(true));
         try {
@@ -32,6 +32,7 @@ export default function FavouritesLoader() {
           dispatch(setFavouritesList(ids));
         } catch (error) {
           console.error("Error loading favourites:", error);
+          // Không cần xử lý 401 ở đây, interceptor đã xử lý
         } finally {
           dispatch(setLoading(false));
         }
@@ -39,8 +40,7 @@ export default function FavouritesLoader() {
     };
 
     loadFavourites();
-  }, [isAuthenticated, dispatch, movieIds.length]);
+  }, [isAuthenticated, dispatch]); // Bỏ movieIds.length khỏi deps để tránh loop
 
   return null; // Component này không render gì
 }
-

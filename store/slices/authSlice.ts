@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { setAuthToken } from "@/api/api";
+import { setAuthToken, setLoggingOut } from "@/api/api";
 
 interface AuthState {
   user: any | null;
@@ -31,6 +31,9 @@ const authSlice = createSlice({
     },
 
     logout: (state) => {
+      // Set flag để tránh interceptor hiện toast khi logout chủ động
+      setLoggingOut(true);
+
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
@@ -41,6 +44,9 @@ const authSlice = createSlice({
 
       // Xóa token khỏi axios header
       setAuthToken(null);
+
+      // Reset flag sau 500ms để cho phép interceptor hoạt động lại
+      setTimeout(() => setLoggingOut(false), 500);
     },
 
     // Load user when refresh page
