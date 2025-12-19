@@ -334,8 +334,8 @@ const UserProfile = () => {
     movie: Movie;
     listType: "watchlist" | "favourites";
   }) => (
-    <div className="group relative rounded-lg overflow-hidden bg-gray-800/50 hover:bg-gray-700/50 transition-all">
-      <Link href={`/movie/${movie.id}`} className="block">
+    <div className="group relative rounded-lg overflow-hidden bg-gray-800/50 transition-all">
+      <Link href={`/movie/${movie.id}`} className="block hover:bg-gray-700/50 transition-all">
         <div className="relative aspect-[2/3]">
           <Image
             src={movie.poster_url}
@@ -344,7 +344,7 @@ const UserProfile = () => {
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <div className="absolute bottom-0 left-0 right-0 p-2">
               <p className="text-white font-medium text-xs line-clamp-2 mb-1">
                 {movie.title}
@@ -363,19 +363,17 @@ const UserProfile = () => {
       </Link>
 
       {/* Delete Button */}
-      <div
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        onClick={(e) => e.stopPropagation()}
+      <Button
+        isIconOnly
+        size="sm"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 bg-red-500/90 hover:bg-red-600 pointer-events-auto"
+        onPress={(e) => {
+          e.stopPropagation();
+          openConfirmDialog(movie.id, movie.title, listType);
+        }}
       >
-        <Button
-          isIconOnly
-          size="sm"
-          className="bg-red-500/90 hover:bg-red-600"
-          onPress={() => openConfirmDialog(movie.id, movie.title, listType)}
-        >
-          <FiTrash2 className="text-white text-sm" />
-        </Button>
-      </div>
+        <FiTrash2 className="text-white text-sm" />
+      </Button>
     </div>
   );
 

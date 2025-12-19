@@ -402,6 +402,17 @@ const WatchMoviePage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Link to Movie Detail Page */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <Button
+                    variant="light"
+                    className="text-yellow-500 hover:text-yellow-400 p-0 h-auto"
+                    onPress={() => router.push(`/movie/${movieId}`)}
+                  >
+                    → Xem chi tiết phim
+                  </Button>
+                </div>
               </div>
             </div>
 

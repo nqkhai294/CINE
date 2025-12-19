@@ -36,6 +36,39 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
 
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
+  // Format thời gian hiển thị
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    // Nếu trong vòng 1 phút
+    if (diffInMinutes < 1) {
+      return "Vừa xong";
+    }
+    // Nếu trong vòng 1 giờ
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} phút trước`;
+    }
+    // Nếu trong vòng 24 giờ
+    if (diffInHours < 24) {
+      return `${diffInHours} giờ trước`;
+    }
+    // Nếu trong vòng 7 ngày
+    if (diffInDays < 7) {
+      return `${diffInDays} ngày trước`;
+    }
+    // Còn lại hiển thị ngày/tháng/năm
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   useEffect(() => {
     handleGetComments();
   }, []);
@@ -162,7 +195,7 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                             {cmt.user.name}
                           </span>
                           <span className="text-gray-500 text-sm">
-                            • {cmt.createdAt}
+                            • {formatDateTime(cmt.createdAt)}
                           </span>
                         </div>
                         <p className="text-gray-300">{cmt.content}</p>

@@ -11,7 +11,7 @@ import { errorToast } from "@/components/ui/toast";
 import { setCurrentMovie } from "@/store/slices/movieSlice";
 import { Movie } from "@/types";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch } from "react-redux";
 
 const DetailMoviePage = () => {
@@ -20,6 +20,7 @@ const DetailMoviePage = () => {
 
   const [movie, setMovie] = useState<Movie>();
   const [loading, setLoading] = useState(true);
+  const commentsRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch();
 
@@ -38,6 +39,13 @@ const DetailMoviePage = () => {
 
     fetchMovie();
   }, [movieId]);
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   if (loading) {
     return (
@@ -78,6 +86,7 @@ const DetailMoviePage = () => {
                     ? parseFloat(movie.tmdb_vote_average)
                     : undefined
                 }
+                onCommentClick={scrollToComments}
               />
             </div>
           </div>
@@ -94,10 +103,13 @@ const DetailMoviePage = () => {
                     ? parseFloat(movie.tmdb_vote_average)
                     : undefined
                 }
+                onCommentClick={scrollToComments}
               />
             </div>
             <MovieTabs movieId={movie.id} actors={movie.actors} />
-            <MovieComments movieId={movie.id} />
+            <div ref={commentsRef}>
+              <MovieComments movieId={movie.id} />
+            </div>
           </div>
         </div>
 

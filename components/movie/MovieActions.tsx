@@ -33,12 +33,14 @@ interface MovieActionsProps {
   movieId?: string;
   trailerUrl?: string;
   avgRating?: number;
+  onCommentClick?: () => void;
 }
 
 const MovieActions = ({
   movieId = "",
   trailerUrl,
   avgRating,
+  onCommentClick,
 }: MovieActionsProps) => {
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
@@ -185,6 +187,7 @@ const MovieActions = ({
           isIconOnly
           className="bg-[#2a3544] hover:bg-[#364152] h-11 w-11 rounded-full transition-all"
           size="md"
+          onPress={onCommentClick}
         >
           <FiMessageCircle className="text-lg text-white" />
         </Button>
