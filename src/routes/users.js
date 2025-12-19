@@ -17,6 +17,12 @@ const { protect } = require("../middleware/authMiddleware");
 router.put("/profile", protect, userController.updateUserProfile);
 
 /**
+ * API: PUT /api/users/avatar
+ * Mô tả: Cập nhật avatar của user hiện tại (cần đăng nhập)
+ */
+router.put("/avatar", protect, userController.updateUserAvatar);
+
+/**
  * API: GET /api/users/:id
  * Mô tả: Lấy thông tin profile của user hiện tại (cần đăng nhập)
  */

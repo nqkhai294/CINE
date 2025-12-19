@@ -46,10 +46,17 @@ module.exports.getReviewsForMovie = async (req, res) => {
     const { movieId } = req.params;
 
     const query = {
-      // JOIN với Users để lấy username
-      text: `SELECT R.content, R.created_at, R.updated_at, U.username 
+      // JOIN với Users và user_profiles để lấy đầy đủ thông tin
+      text: `SELECT 
+               R.id,
+               R.content,
+               R.created_at,
+               U.id as user_id,
+               U.display_name,
+               UP.avatar_url
              FROM Reviews R
              JOIN Users U ON R.user_id = U.id
+             LEFT JOIN user_profiles UP ON U.id = UP.user_id
              WHERE R.movie_id = $1
              ORDER BY R.created_at DESC`,
       values: [movieId],
@@ -57,9 +64,21 @@ module.exports.getReviewsForMovie = async (req, res) => {
 
     const { rows } = await db.query(query);
 
+    // Format data theo interface Comment
+    const formattedData = rows.map((row) => ({
+      id: row.id,
+      user: {
+        id: row.user_id,
+        name: row.display_name,
+        avatar: row.avatar_url || "/default-avatar.png", // default avatar nếu null
+      },
+      content: row.content,
+      createdAt: row.created_at,
+    }));
+
     res.status(200).json({
       result: { status: "ok", message: "Tải bình luận thành công" },
-      data: rows,
+      data: formattedData,
     });
   } catch (error) {
     console.error("Lỗi khi lấy reviews cho phim:", error);

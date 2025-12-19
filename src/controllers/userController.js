@@ -33,7 +33,7 @@ module.exports.getUserById = async (req, res) => {
 
 module.exports.updateUserProfile = async (req, res) => {
   try {
-    const { bio, avatar_url, date_of_birth, gender } = req.body;
+    const { bio, date_of_birth, gender } = req.body;
     const userId = req.user.id; // Lấy từ middleware auth
 
     // Validation cơ bản
@@ -58,10 +58,7 @@ module.exports.updateUserProfile = async (req, res) => {
       updateFields.push(`bio = $${++paramCount}`);
       values.push(bio);
     }
-    if (avatar_url !== undefined) {
-      updateFields.push(`avatar_url = $${++paramCount}`);
-      values.push(avatar_url);
-    }
+
     if (date_of_birth !== undefined) {
       updateFields.push(`date_of_birth = $${++paramCount}`);
       values.push(date_of_birth);
@@ -102,6 +99,42 @@ module.exports.updateUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi cập nhật profile:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.updateUserAvatar = async (req, res) => {
+  try {
+    const { avatar_url } = req.body;
+    const userId = req.user.id; // Lấy từ middleware auth
+
+    if (!avatar_url || typeof avatar_url !== "string") {
+      return res.status(400).json({ message: "Invalid avatar URL" });
+    }
+
+    const query = {
+      text: `UPDATE user_profiles 
+             SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $2
+             RETURNING *`,
+      values: [avatar_url, userId],
+    };
+
+    const rows = await db.query(query);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    res.status(200).json({
+      result: {
+        message: "Avatar updated successfully",
+        status: "ok",
+      },
+      data: rows[0],
+    });
+  } catch (error) {
+    console.log("Lỗi khi cập nhật avatar:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
