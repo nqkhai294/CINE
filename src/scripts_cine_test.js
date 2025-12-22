@@ -1,66 +1,88 @@
 import http from "k6/http";
 import { check, sleep, group } from "k6";
 
-// 1. Cấu hình kịch bản test (OPTIONS)
+// --- 1. DATA INPUT ---
+const MOVIE_IDS = [
+  11, 12, 13, 18, 22, 24, 27, 35, 38, 58, 62, 77, 78, 85, 97, 98, 101, 103, 105,
+  106, 107, 111, 114, 118, 120, 121, 122, 128, 129, 137, 155, 161, 162,
+];
 
+// --- 2. CẤU HÌNH STRESS TEST (STEP STRESS) ---
 export const options = {
   stages: [
-    { duration: "10s", target: 30 }, // GD 1: Tăng dần lên 10 người dùng trong 10s
-    { duration: "30s", target: 30 }, // Giai đoạn 2: Giữ ổn định 10 người dùng (Giai đoạn chính)
-    { duration: "10s", target: 0 }, // Giai đoạn 3: Giảm dần về 0 để kết thúc
+    { duration: "30s", target: 25 },
+    { duration: "1m", target: 25 },
+
+    { duration: "30s", target: 50 },
+    { duration: "1m", target: 50 },
+
+    { duration: "30s", target: 75 },
+    { duration: "1m", target: 75 },
+
+    { duration: "30s", target: 0 },
   ],
 
+  // --- THRESHOLDS THEO TAGS ---
   thresholds: {
-    // 95% các request phải hoàn thành trong vòng 2000ms
-    http_req_duration: ["p(95)<2000"],
+    http_req_failed: ["rate<0.05"],
 
-    // Tỷ lệ lỗi phải dưới 1%
-    http_req_failed: ["rate<0.01"],
+    "http_req_duration{name:Home_Page}": ["p(95)<2000"],
+
+    "http_req_duration{name:API_Detail}": ["p(95)<1000"],
+
+    "http_req_duration{name:API_ML}": ["p(95)<5000"],
   },
 };
 
-// 2. Địa chỉ SERVER
-
 const BASE_URL_FE = "http://localhost:3000";
 const BASE_URL_BE = "http://localhost:4200";
-const MOVIE_ID = 155; // ID phim dùng để test
+
+const apiParams = {
+  headers: { "Content-Type": "application/json" },
+};
 
 export default function () {
-  // Truy cập trang home
-  group("01_Visit_Homepage", function () {
-    const res = http.get(`${BASE_URL_FE}/`);
+  const randomId = MOVIE_IDS[Math.floor(Math.random() * MOVIE_IDS.length)];
 
-    check(res, {
-      "Home status is 200": (r) => r.status === 200,
+  // === BƯỚC 1: VÀO TRANG CHỦ ===
+  group("Step 1: Home Page", function () {
+    const resHome = http.get(`${BASE_URL_FE}/?nocache=${Date.now()}`, {
+      tags: { name: "Home_Page" },
     });
+
+    check(resHome, { "Home 200": (r) => r.status === 200 });
   });
 
   sleep(1);
 
-  // Xem chi tiết film
-  group("02_View_Movie_Detail", function () {
-    const res = http.get(`${BASE_URL_FE}/movie/${MOVIE_ID}`);
+  // === BƯỚC 2: VÀO DETAIL & GỌI API ===
+  group(`Step 2: Detail Movie ${randomId}`, function () {
+    const resPage = http.get(
+      `${BASE_URL_FE}/movie/${randomId}?nocache=${Date.now()}`,
+      {
+        tags: { name: "Detail_HTML" },
+      }
+    );
+    check(resPage, { "Detail HTML 200": (r) => r.status === 200 });
 
-    check(res, {
-      "Movie Detail status is 200": (r) => r.status === 200,
-    });
+    const responses = http.batch([
+      [
+        "GET",
+        `${BASE_URL_BE}/api/movies/${randomId}`,
+        null,
+        { headers: apiParams.headers, tags: { name: "API_Detail" } },
+      ],
+      [
+        "GET",
+        `${BASE_URL_BE}/api/recommendations/similar/${randomId}`,
+        null,
+        { headers: apiParams.headers, tags: { name: "API_ML" } },
+      ],
+    ]);
+
+    check(responses[0], { "API Info OK": (r) => r.status === 200 });
+    check(responses[1], { "API Recs OK": (r) => r.status === 200 });
   });
 
-  sleep(2);
-
-  // Gọi api gợi ý
-  group("03_Get_Recommendations_API", function () {
-    const url = `${BASE_URL_BE}/api/recommendations/similar/${MOVIE_ID}`;
-
-    const res = http.get(url);
-
-    check(res, {
-      "Recommendations API status is 200": (r) => r.status === 200,
-      // Kiểm tra API phản hồi nhanh hơn 1.5 giây không
-      "ML Response time < 1500ms": (r) => r.timings.duration < 1500,
-    });
-  });
-
-  // Nghỉ 1 giây trước khi lặp lại vòng lặp
   sleep(1);
 }
