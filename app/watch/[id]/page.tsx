@@ -24,6 +24,7 @@ import {
   getMovieDetails,
   removeFromFavouritesList,
   removeFromWatchlist,
+  addToHistoryWatch,
 } from "@/api/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { errorToast, successToast, warningToast } from "@/components/ui/toast";
@@ -87,6 +88,26 @@ const WatchMoviePage = () => {
 
     fetchData();
   }, [movieId, cachedMovie]);
+
+  // Ghi lịch sử xem phim khi vào trang
+  useEffect(() => {
+    const recordWatchHistory = async () => {
+      // Chỉ ghi lịch sử khi user đã đăng nhập
+      if (!isAuthenticated) {
+        return;
+      }
+
+      try {
+        await addToHistoryWatch({ movieId });
+        console.log("Watch history recorded for movie:", movieId);
+      } catch (error) {
+        // Không hiện lỗi cho user, chỉ log
+        console.error("Error recording watch history:", error);
+      }
+    };
+
+    recordWatchHistory();
+  }, [movieId, isAuthenticated]);
 
   const handleWatchlistToggle = async () => {
     if (!isAuthenticated) {

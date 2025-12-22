@@ -486,3 +486,30 @@ export const getCommentsForMovie = async (movieId: string | number) => {
     throw new Error("Network or server error occurred");
   }
 };
+
+// History Watch API
+export const addToHistoryWatch = async (request: any) => {
+  try {
+    const res = await apiClient.post("/history-watch", request);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error adding history watch:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+export const getHistoryWatch = async () => {
+  try {
+    const res = await apiClient.get("/history-watch");
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching history watch:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};

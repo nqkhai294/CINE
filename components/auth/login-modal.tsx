@@ -8,7 +8,7 @@ import { Link } from "@heroui/link";
 import { FcGoogle } from "react-icons/fc";
 import { addToast, useToast } from "@heroui/toast";
 import Turnstile from "react-turnstile";
-import { getCurrentUser, loginUser, registerUser } from "@/api/api";
+import { loginUser, registerUser } from "@/api/api";
 import { errorToast, successToast } from "../ui/toast";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";

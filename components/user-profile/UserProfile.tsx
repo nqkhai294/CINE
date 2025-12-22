@@ -32,6 +32,7 @@ import {
   removeFromWatchlist,
   removeFromFavouritesList,
   updateUserAvatar,
+  getHistoryWatch,
 } from "@/api/api";
 import { login } from "@/store/slices/authSlice";
 import { removeFromWatchlist as removeFromWatchlistAction } from "@/store/slices/watchlistSlice";
@@ -45,7 +46,7 @@ interface Movie {
   title: string;
   poster_url: string;
   release_year?: number;
-  tmdb_vote_average?: string;
+  // tmdb_vote_average?: string;
 }
 
 const UserProfile = () => {
@@ -185,6 +186,20 @@ const UserProfile = () => {
     fetchFavouritesMovies();
   }, [favouritesIds]);
 
+  useEffect(() => {
+    const fetchListHistoryMovies = async () => {
+      try {
+        const res = await getHistoryWatch();
+        console.log("History movies:", res.result.views);
+        setRecentMovies(res.result.views);
+      } catch (error) {
+        console.error("Error fetching history movies:", error);
+      }
+    };
+
+    fetchListHistoryMovies();
+  }, []);
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -305,14 +320,14 @@ const UserProfile = () => {
             <p className="text-white font-medium text-xs line-clamp-2 mb-1">
               {movie.title}
             </p>
-            {movie.tmdb_vote_average && (
+            {/* {movie.tmdb_vote_average && (
               <div className="flex items-center gap-1">
                 <FaStar className="text-yellow-500 text-xs" />
                 <span className="text-white text-xs">
                   {parseFloat(movie.tmdb_vote_average).toFixed(1)}
                 </span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -335,7 +350,10 @@ const UserProfile = () => {
     listType: "watchlist" | "favourites";
   }) => (
     <div className="group relative rounded-lg overflow-hidden bg-gray-800/50 transition-all">
-      <Link href={`/movie/${movie.id}`} className="block hover:bg-gray-700/50 transition-all">
+      <Link
+        href={`/movie/${movie.id}`}
+        className="block hover:bg-gray-700/50 transition-all"
+      >
         <div className="relative aspect-[2/3]">
           <Image
             src={movie.poster_url}
@@ -367,10 +385,7 @@ const UserProfile = () => {
         isIconOnly
         size="sm"
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 bg-red-500/90 hover:bg-red-600 pointer-events-auto"
-        onPress={(e) => {
-          e.stopPropagation();
-          openConfirmDialog(movie.id, movie.title, listType);
-        }}
+        onPress={() => openConfirmDialog(movie.id, movie.title, listType)}
       >
         <FiTrash2 className="text-white text-sm" />
       </Button>

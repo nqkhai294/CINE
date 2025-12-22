@@ -96,7 +96,7 @@ export const Navbar = () => {
     };
 
     getUser();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
