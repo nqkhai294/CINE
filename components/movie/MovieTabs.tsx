@@ -3,6 +3,7 @@
 import React from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import Image from "next/image";
+import Link from "next/link";
 import { Actor } from "@/types";
 import SimilarMoviesSection from "./SimilarMoviesSection";
 
@@ -32,8 +33,9 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
             {actors && actors.length > 0 ? (
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {actors.map((actor) => (
-                  <div
+                  <Link
                     key={actor.id}
+                    href={`/actor/${actor.id}`}
                     className="flex flex-col items-center group cursor-pointer"
                   >
                     {/* Circular Avatar */}
@@ -44,7 +46,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                           alt={actor.name}
                           fill
                           sizes="80px"
-                          className="object-cover"
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                     ) : (
@@ -55,10 +57,10 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                       </div>
                     )}
                     {/* Actor Name */}
-                    <p className="text-white font-medium text-sm text-center line-clamp-2 w-full">
+                    <p className="text-white font-medium text-sm text-center line-clamp-2 w-full group-hover:text-yellow-500 transition-colors">
                       {actor.name}
                     </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

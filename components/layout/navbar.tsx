@@ -46,13 +46,16 @@ import AppLogo from "@/public/logo.png";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { login, logout } from "@/store/slices/authSlice";
 import { SearchBar } from "@/components/layout/search-bar";
-import { getCurrentUser } from "@/api/api";
+import { getCurrentUser, getAllGenres } from "@/api/api";
+import { Genre } from "@/types";
 
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
 
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -96,6 +99,21 @@ export const Navbar = () => {
     };
 
     getUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const response = await getAllGenres();
+        if (response.success && response.data) {
+          setGenres(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching genres:", error);
+      }
+    };
+
+    fetchGenres();
   }, []);
 
   useEffect(() => {
@@ -161,16 +179,80 @@ export const Navbar = () => {
           </div>
 
           <ul className="flex gap-4 justify-start text-sm flex-shrink-0 whitespace-nowrap ml-2">
-            {siteConfig.navItems.map((item) => (
-              <NavbarItem key={item.href}>
-                <NextLink
-                  className="text-white/90 hover:text-white transition-colors text-sm font-normal"
-                  href={item.href}
-                >
-                  {item.label}
-                </NextLink>
-              </NavbarItem>
-            ))}
+            {siteConfig.navItems.map((item) => {
+              if (item.label === "Thể loại") {
+                return (
+                  <NavbarItem key={item.href}>
+                    <div
+                      onMouseEnter={() => setIsGenreDropdownOpen(true)}
+                      onMouseLeave={() => setIsGenreDropdownOpen(false)}
+                      className="flex items-center"
+                    >
+                      <Dropdown
+                        isOpen={isGenreDropdownOpen}
+                        classNames={{
+                          content:
+                            "p-0 border-none bg-transparent shadow-none min-w-0",
+                        }}
+                      >
+                        <DropdownTrigger>
+                          <button className="text-white/90 hover:text-white transition-colors text-sm font-normal flex items-center gap-1 bg-transparent border-none outline-none cursor-pointer p-0">
+                            {item.label}
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="Genres"
+                          variant="flat"
+                          classNames={{
+                            base: "max-w-[500px] w-[500px] bg-[#0a0e17] !border-none shadow-xl rounded-lg overflow-hidden",
+                            list: "grid grid-cols-2 gap-1 p-2",
+                          }}
+                        >
+                          {genres.map((genre) => (
+                            <DropdownItem
+                              key={genre.id}
+                              as={NextLink}
+                              href={`/genre/${genre.id}`}
+                              className="text-sm text-white hover:text-white"
+                              classNames={{
+                                base: "data-[hover=true]:bg-gray-700/50",
+                                title: "text-white",
+                              }}
+                            >
+                              {genre.name}
+                            </DropdownItem>
+                          ))}
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
+                  </NavbarItem>
+                );
+              }
+
+              return (
+                <NavbarItem key={item.href}>
+                  <NextLink
+                    className="text-white/90 hover:text-white transition-colors text-sm font-normal"
+                    href={item.href}
+                  >
+                    {item.label}
+                  </NextLink>
+                </NavbarItem>
+              );
+            })}
           </ul>
         </NavbarContent>
 
@@ -244,16 +326,40 @@ export const Navbar = () => {
 
             {/* Navigation Links */}
             <div className="flex flex-col space-y-2">
-              {siteConfig.navItems.map((item) => (
-                <NextLink
-                  key={item.href}
-                  className="text-white/90 hover:text-white hover:bg-white/10 transition-colors text-sm font-normal py-3 px-4 rounded-lg"
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </NextLink>
-              ))}
+              {siteConfig.navItems.map((item) => {
+                if (item.label === "Thể loại") {
+                  return (
+                    <div key={item.href} className="space-y-2">
+                      <div className="text-white/90 text-sm font-semibold py-2 px-4">
+                        {item.label}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 px-4">
+                        {genres.map((genre) => (
+                          <NextLink
+                            key={genre.id}
+                            className="text-white/80 hover:text-white hover:bg-white/10 transition-colors text-xs py-2 px-3 rounded-lg"
+                            href={`/genre/${genre.id}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {genre.name}
+                          </NextLink>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <NextLink
+                    key={item.href}
+                    className="text-white/90 hover:text-white hover:bg-white/10 transition-colors text-sm font-normal py-3 px-4 rounded-lg"
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </NextLink>
+                );
+              })}
             </div>
           </div>
         </div>

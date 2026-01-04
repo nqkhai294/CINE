@@ -39,6 +39,11 @@ export interface Movie {
   directors?: Director[];
 }
 
+export interface Genre {
+  id: number;
+  name: string;
+}
+
 export interface User {
   id: number;
   user_id: number;

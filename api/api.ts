@@ -513,3 +513,62 @@ export const getHistoryWatch = async () => {
     throw new Error("Network or server error occurred");
   }
 };
+
+export const getAllGenres = async () => {
+  try {
+    const res = await apiClient.get("/genres");
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching genres:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+export const getMoviesByGenre = async (genreId: string | number) => {
+  try {
+    const res = await apiClient.get(`/genres/${genreId}/movies`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching movies by genre:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+// Actors API
+/**
+ * Get all actors
+ */
+export const getAllActors = async () => {
+  try {
+    const res = await apiClient.get("/actors");
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching actors:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get movies by actor ID
+ */
+export const getMoviesByActor = async (actorId: string | number) => {
+  try {
+    const res = await apiClient.get(`/actors/${actorId}/movies`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching movies by actor:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};

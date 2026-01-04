@@ -5,25 +5,13 @@ export const siteConfig = {
   description: "Xem phim online miễn phí chất lượng cao",
   navItems: [
     {
-      label: "Phim lẻ",
-      href: "/films-single",
-    },
-    {
-      label: "Phim bộ",
-      href: "/films-series",
+      label: "Tất cả phim",
+      href: "/movies",
     },
     {
       label: "Thể loại",
       href: "/genres",
     },
-    {
-      label: "Quốc gia",
-      href: "/films-by-country",
-    },
-    // {
-    //   label: "Xem chung",
-    //   href: "/watch-together",
-    // },
     {
       label: "Diễn viên",
       href: "/actors",

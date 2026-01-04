@@ -210,16 +210,18 @@ export const MovieHoverCard = ({
         </div>
 
         {/* Genres */}
-        <div className="flex flex-wrap gap-1.5">
-          {movie.genres.slice(0, 4).map((genre) => (
-            <span
-              key={genre}
-              className="px-2 py-1 bg-white/5 rounded text-[11px] text-gray-300"
-            >
-              {genre || "Khác"}
-            </span>
-          ))}
-        </div>
+        {movie.genres && movie.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {movie.genres.slice(0, 4).map((genre) => (
+              <span
+                key={genre}
+                className="px-2 py-1 bg-white/5 rounded text-[11px] text-gray-300"
+              >
+                {genre || "Khác"}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
