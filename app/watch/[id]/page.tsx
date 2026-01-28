@@ -1,6 +1,5 @@
 "use client";
 import PageWrapper from "@/components/layout/page-wrapper";
-import ReactPlayer from "react-player";
 import { Movie } from "@/types";
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
@@ -41,13 +40,13 @@ import { Chip } from "@heroui/chip";
 import MovieComments from "@/components/movie/MovieComments";
 import SimilarMoviesSection from "@/components/movie/SimilarMoviesSection";
 import Image from "next/image";
+import { VideoPlayer } from "@/components/movie/watch/VideoPlayer";
 
 const WatchMoviePage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isAddingToWatchlist, setIsAddingToWatchlist] = useState(false);
   const [isAddingToFavourites, setIsAddingToFavourites] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const param = useParams();
   const movieId = param.id as string;
@@ -55,7 +54,7 @@ const WatchMoviePage = () => {
   const dispatch = useAppDispatch();
   const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
   const { movieIds: favouritesIds } = useAppSelector(
-    (state) => state.favourites
+    (state) => state.favourites,
   );
 
   const { isAuthenticated } = useAppSelector((state) => state.auth);
@@ -65,7 +64,7 @@ const WatchMoviePage = () => {
 
   const [movie, setMovie] = useState<Movie | null>(null);
   const cachedMovie = useSelector(
-    (state: RootState) => state.movie.currentMovie
+    (state: RootState) => state.movie.currentMovie,
   );
 
   useEffect(() => {
@@ -205,37 +204,12 @@ const WatchMoviePage = () => {
         </header>
 
         {/* 2.Video Player */}
-        <div className="w-[90vw] rounded-sm bg-black relative aspect-video max-h-[90vh] mx-auto">
-          {videoSource ? (
-            <>
-              <ReactPlayer
-                src={videoSource}
-                width="100%"
-                height="100%"
-                controls={true}
-                playing={isPlaying}
-                pip={false}
-                style={{ backgroundColor: "black" }}
-              />
-
-              {/* Play Button Overlay */}
-              {!isPlaying && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer group"
-                  onClick={() => setIsPlaying(true)}
-                >
-                  <div className="w-20 h-20 flex items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-600 transition-all shadow-2xl group-hover:scale-110">
-                    <FaPlay className="text-black text-3xl ml-1" />
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-900">
-              <p>Chưa có nguồn phát cho phim này.</p>
-            </div>
-          )}
-        </div>
+        <VideoPlayer
+          src={videoSource || ""}
+          poster={movie.backdrop_url || undefined}
+          title={movie.title}
+          className="w-[90vw] rounded-sm bg-black relative aspect-video max-h-[90vh] mx-auto"
+        />
 
         {/* 3.Movie Title */}
         <div className="container mx-auto px-4 py-6">
