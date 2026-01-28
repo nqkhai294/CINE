@@ -514,6 +514,11 @@ export const getHistoryWatch = async () => {
   }
 };
 
+// Genres API
+/**
+ * Get all genres
+ */
+
 export const getAllGenres = async () => {
   try {
     const res = await apiClient.get("/genres");
@@ -526,6 +531,9 @@ export const getAllGenres = async () => {
     throw new Error("Network or server error occurred");
   }
 };
+
+/** Get movies by genre ID
+ */
 
 export const getMoviesByGenre = async (genreId: string | number) => {
   try {
@@ -566,6 +574,39 @@ export const getMoviesByActor = async (actorId: string | number) => {
     return res.data;
   } catch (error: any) {
     console.error("Error fetching movies by actor:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+// Ratings API
+/**
+ * Add rating to a movie
+ *  */
+export const addRatingToMovie = async (request: any) => {
+  try {
+    const res = await apiClient.post("/ratings", request);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error adding rating:", error.response?.data);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get average rating for a movie
+ */
+export const getAverageRatingForMovie = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.get(`/ratings/movie/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching average rating:", error.response?.data);
     if (error.response && error.response.data) {
       throw new Error(error.response.data.message);
     }

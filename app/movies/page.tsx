@@ -1,4 +1,5 @@
 "use client";
+// Movies Page (/all movies)
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getMovies } from "@/api/api";
@@ -86,9 +87,7 @@ export default function MoviesPage() {
     if (!searchQuery.trim()) return movies;
 
     const query = searchQuery.toLowerCase().trim();
-    return movies.filter((movie) =>
-      movie.title.toLowerCase().includes(query)
-    );
+    return movies.filter((movie) => movie.title.toLowerCase().includes(query));
   }, [movies, searchQuery]);
 
   useEffect(() => {
@@ -230,4 +229,3 @@ export default function MoviesPage() {
     </div>
   );
 }
-
