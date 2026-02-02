@@ -17,6 +17,9 @@ const recommendationRoutes = require("./routes/recommendations");
 const userRoutes = require("./routes/users");
 const watchlistRoutes = require("./routes/watchlist");
 const favouriteRoutes = require("./routes/favourites");
+const genreRoutes = require("./routes/genres");
+const actorRoutes = require("./routes/actors");
+const directorRoutes = require("./routes/directors");
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -38,6 +41,9 @@ app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/favourites", favouriteRoutes);
+app.use("/api/genres", genreRoutes);
+app.use("/api/actors", actorRoutes);
+app.use("/api/directors", directorRoutes);
 
 app.get("/", (req, res) => {
   res.send("Chào mừng đến với CINE Backend!");

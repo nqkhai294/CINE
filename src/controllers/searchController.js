@@ -2,7 +2,7 @@ const db = require("../db");
 
 module.exports.searchMovies = async (req, res) => {
   try {
-    const { keyword } = req.query; // Thường search dùng query params
+    const { keyword } = req.query;
 
     if (!keyword || keyword.trim() === "") {
       return res.status(400).json({ message: "Missing search keyword!" });
