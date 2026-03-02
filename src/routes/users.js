@@ -2,7 +2,34 @@ const express = require("express");
 const router = express.Router();
 
 const userController = require("../controllers/userController");
+const watchProgressController = require("../controllers/watchProgressController");
 const { protect } = require("../middleware/authMiddleware");
+
+/**
+ * API: GET /api/users/me/watch-progress?movie_id=...
+ * Lấy tiến độ + cấu hình xem cho một phim (cần đăng nhập)
+ */
+router.get(
+  "/me/watch-progress",
+  protect,
+  watchProgressController.getWatchProgress,
+);
+
+/**
+ * API: PUT/PATCH /api/users/me/watch-progress
+ * Body: { movie_id, current_time?, duration?, playback_rate?, quality?, subtitle_lang?, subtitle_enabled?, skip_intro? }
+ * Upsert tiến độ + cấu hình xem (cần đăng nhập)
+ */
+router.put(
+  "/me/watch-progress",
+  protect,
+  watchProgressController.upsertWatchProgress,
+);
+router.patch(
+  "/me/watch-progress",
+  protect,
+  watchProgressController.upsertWatchProgress,
+);
 
 /**
  * API: GET /api/users/:userId
