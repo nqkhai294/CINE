@@ -14,6 +14,7 @@ import {
   FaPlus,
   FaRegHeart,
   FaShare,
+  FaStar,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
@@ -26,6 +27,7 @@ import {
   addToHistoryWatch,
   getWatchProgress,
   upsertWatchProgress,
+  addRatingToMovie,
 } from "@/api/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { errorToast, successToast, warningToast } from "@/components/ui/toast";
@@ -73,6 +75,9 @@ const WatchMoviePage = () => {
     duration?: number;
     playbackRate?: number;
   } | null>(null);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const lastProgressRef = React.useRef({ currentTime: 0, duration: 0 });
   const saveIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(
     null,
@@ -204,6 +209,29 @@ const WatchMoviePage = () => {
       errorToast("Lỗi", error.message || "Có lỗi xảy ra");
     } finally {
       setIsAddingToFavourites(false);
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (!isAuthenticated) {
+      errorToast("Lỗi", "Vui lòng đăng nhập để đánh giá phim");
+      return;
+    }
+    if (!userRating) {
+      warningToast("Thiếu thông tin", "Vui lòng chọn số sao để đánh giá");
+      return;
+    }
+    setIsSubmittingRating(true);
+    try {
+      await addRatingToMovie({
+        movieId: Number(movieId),
+        score: userRating,
+      });
+      successToast("Cảm ơn bạn", "Đánh giá của bạn đã được lưu");
+    } catch (error: any) {
+      errorToast("Lỗi", error.message || "Không thể gửi đánh giá");
+    } finally {
+      setIsSubmittingRating(false);
     }
   };
 
@@ -503,7 +531,44 @@ const WatchMoviePage = () => {
                     <span className="text-xs text-gray-400">Điểm phim</span>
                   </div>
                 </div>
-                <Button fullWidth color="primary" className="font-bold">
+                <div
+                  className="flex items-center justify-center gap-1 mb-3"
+                  onMouseLeave={() => setHoverRating(null)}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const active =
+                      (hoverRating ?? userRating ?? 0) >= star;
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        className="p-1"
+                        onMouseEnter={() => setHoverRating(star)}
+                        onClick={() => setUserRating(star)}
+                      >
+                        <FaStar
+                          className={
+                            active
+                              ? "text-yellow-400 text-2xl"
+                              : "text-gray-600 text-2xl"
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                {userRating && (
+                  <p className="text-xs text-center text-gray-300 mb-2">
+                    Bạn chọn {userRating} / 5 sao
+                  </p>
+                )}
+                <Button
+                  fullWidth
+                  color="primary"
+                  className="font-bold"
+                  onPress={handleSubmitRating}
+                  isLoading={isSubmittingRating}
+                >
                   Đánh giá ngay
                 </Button>
               </div>
