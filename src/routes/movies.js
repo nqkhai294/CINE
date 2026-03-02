@@ -27,6 +27,8 @@ router.get("/highest-rate", movieController.getHighestTMDBMovies);
  */
 router.get("/newest", movieController.getTenNewestMovies);
 
+router.get("/genre/:id", movieController.getGenresRecommendationsForUser);
+
 /**
  * API: GET /api/movies/:id
  * Mô tả: Lấy chi tiết phim theo ID

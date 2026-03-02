@@ -1,9 +1,10 @@
+const { text } = require("express");
 const db = require("../db");
 
 module.exports.getAllMovies = async (req, res) => {
   try {
     const { rows } = await db.query(
-      "SELECT id, title, poster_url, avg_rating FROM movies ORDER BY release_year DESC"
+      "SELECT id, title, poster_url, avg_rating FROM movies ORDER BY release_year DESC",
     );
     res.status(200).json({
       result: {
@@ -111,17 +112,28 @@ module.exports.getMovieById = async (req, res) => {
 module.exports.getHighestTMDBMovies = async (req, res) => {
   try {
     // Join 3 table để lấy cả thể loại
+    // const query = {
+    //   text: `SELECT
+    //       m.*,
+    //       COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+    //     FROM Movies m
+    //     LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
+    //     LEFT JOIN Genres g ON mg.genre_id = g.id
+    //     where tmdb_vote_count > 20000
+    //     GROUP BY m.id
+    //     ORDER BY m.tmdb_vote_average DESC NULLS LAST
+    //     LIMIT 6`,
+    // };
+
     const query = {
-      text: `SELECT 
-          m.*, 
-          COALESCE(ARRAY_AGG(g.name), '{}') AS genres
-        FROM Movies m
-        LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
-        LEFT JOIN Genres g ON mg.genre_id = g.id
-		    where tmdb_vote_count > 20000
-        GROUP BY m.id
-        ORDER BY m.tmdb_vote_average DESC NULLS LAST
-        LIMIT 6`,
+      text: `select m.*, coalesce(array_agg(g.name), '{}') as genres
+             from movies m
+             left join movie_genres mg on m.id = mg.movie_id
+             left join genres g on mg.genre_id = g.id
+             where tmdb_vote_count > 100
+             group by m.id
+             order by release_date desc nulls last
+             limit 6;`,
     };
 
     const { rows } = await db.query(query);
@@ -164,6 +176,34 @@ module.exports.getTenNewestMovies = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi lấy 10 phim mới nhất:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.getGenresRecommendationsForUser = async (req, res) => {
+  try {
+    const genreId = req.params.id;
+    console.log("🔍 Lấy phim theo thể loại genreId:", genreId);
+    const query = {
+      text: `select m.*, coalesce(array_agg(g.name), '{}') as genres
+             from movies m
+             left join movie_genres mg on m.id = mg.movie_id
+             left join genres g on mg.genre_id = g.id
+             where g.id = $1
+             group by m.id
+             limit 10;`,
+      values: [genreId],
+    };
+    const { rows } = await db.query(query);
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error in getGenresRecommendationsForUser:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

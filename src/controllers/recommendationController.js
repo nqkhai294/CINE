@@ -5,6 +5,39 @@ const URL_ML = require("../environment/environment").URL_ML;
 
 const pendingRequests = new Map();
 
+module.exports.getGenresRecommendationsForUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const query = {
+      text: `SELECT 
+              g.name AS genre_name,
+              g.id AS genre_id,
+              SUM(v.heuristic_score) AS total_score
+            FROM v_user_movie_scores v
+            JOIN movie_genres mg ON v.movie_id = mg.movie_id
+            JOIN genres g ON mg.genre_id = g.id
+            WHERE v.user_id = $1  
+            GROUP BY g.id, g.name
+            ORDER BY total_score DESC
+            limit 6`,
+      values: [userId],
+    };
+    const { rows } = await db.query(query);
+
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error in getGenresRecommendationsForUser:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports.getSimilarMovies = async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -60,13 +93,13 @@ module.exports.getSimilarMovies = async (req, res) => {
          LEFT JOIN Genres g ON mg.genre_id = g.id
          WHERE m.id = ANY($1::int[])
          GROUP BY m.id`,
-        [recommendedIds]
+        [recommendedIds],
       );
 
       // C. Sắp xếp kết quả
       // SỬA LỖI 1: Chuyển ID sang String để Map khớp với DB (vì DB trả về bigint dạng String)
       const moviesMap = new Map(
-        dbResult.rows.map((movie) => [String(movie.id), movie])
+        dbResult.rows.map((movie) => [String(movie.id), movie]),
       );
 
       const sortedMovies = recommendedIds
