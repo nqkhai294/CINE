@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardFooter } from "@heroui/card";
 import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Movie } from "@/types";
 import { MovieHoverCard } from "@/components/home/movie-hover-card";
 
@@ -29,11 +29,8 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
         {topMovies.map((movie, index) => (
-          <motion.div
+          <div
             key={movie.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
             className="relative group cursor-pointer"
             onMouseEnter={() => setHoveredMovie(index)}
             onMouseLeave={() => setHoveredMovie(null)}
@@ -128,7 +125,7 @@ export const TopMoviesSection = ({ title, movies }: TopMoviesSectionProps) => {
                 />
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         ))}
       </div>
     </section>

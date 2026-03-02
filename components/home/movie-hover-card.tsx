@@ -110,7 +110,7 @@ export const MovieHoverCard = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-[320px] z-50 bg-[#1a2332] rounded-large shadow-2xl border border-gray-700 overflow-hidden"
+      className="absolute top-0 left-1/2 -translate-x-1/2 translate-y-2 w-[320px] z-50 bg-[#1a2332] rounded-large shadow-2xl border border-gray-700 overflow-hidden"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

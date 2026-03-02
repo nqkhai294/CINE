@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Spinner } from "@heroui/spinner";
 import { Movie } from "@/types";
@@ -39,6 +39,7 @@ export function GenreMoviesRow({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [startIndex, setStartIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const resolvedViewAllHref = useMemo(
     () => viewAllHref ?? `/genre/${genreId}`,
@@ -68,7 +69,6 @@ export function GenreMoviesRow({
     };
   }, [genreId, limit, fetchMovies]);
 
-  const visibleMovies = movies.slice(startIndex, startIndex + VISIBLE_COUNT);
   const canPrev = startIndex > 0;
   const canNext = startIndex + VISIBLE_COUNT < movies.length;
 
@@ -105,10 +105,18 @@ export function GenreMoviesRow({
           {canPrev && (
             <button
               type="button"
-              className="hidden sm:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white"
-              onClick={() =>
-                setStartIndex((prev) => Math.max(0, prev - VISIBLE_COUNT))
-              }
+              className="hidden sm:flex items-center justify-center absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-yellow-500 text-black shadow-lg hover:bg-yellow-400"
+              onClick={() => {
+                if (!canPrev) return;
+                setStartIndex((prev) => Math.max(0, prev - 1));
+                const container = listRef.current;
+                if (container && container.firstElementChild) {
+                  const itemWidth =
+                    (container.firstElementChild as HTMLElement).getBoundingClientRect()
+                      .width + 16; // +gap approx
+                  container.scrollBy({ left: -itemWidth, behavior: "smooth" });
+                }
+              }}
             >
               ‹
             </button>
@@ -118,23 +126,34 @@ export function GenreMoviesRow({
           {canNext && (
             <button
               type="button"
-              className="hidden sm:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white"
-              onClick={() =>
+              className="hidden sm:flex items-center justify-center absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-yellow-500 text-black shadow-lg hover:bg-yellow-400"
+              onClick={() => {
+                if (!canNext) return;
                 setStartIndex((prev) =>
-                  Math.min(movies.length - VISIBLE_COUNT, prev + VISIBLE_COUNT),
-                )
-              }
+                  Math.min(Math.max(movies.length - VISIBLE_COUNT, 0), prev + 1),
+                );
+                const container = listRef.current;
+                if (container && container.firstElementChild) {
+                  const itemWidth =
+                    (container.firstElementChild as HTMLElement).getBoundingClientRect()
+                      .width + 16;
+                  container.scrollBy({ left: itemWidth, behavior: "smooth" });
+                }
+              }}
             >
               ›
             </button>
           )}
 
-          <div className="flex gap-3 sm:gap-4 overflow-hidden px-1 sm:px-6">
-            {visibleMovies.map((movie) => (
+          <div
+            ref={listRef}
+            className="flex gap-3 sm:gap-4 overflow-x-hidden overflow-y-visible px-1 sm:px-6 scroll-smooth"
+          >
+            {movies.map((movie) => (
               <MoviePosterCard
                 key={movie.id}
                 movie={movie}
-                className="w-[140px] sm:w-[160px] md:w-[180px]"
+                className="flex-[0_0_20%] max-w-[20%]"
               />
             ))}
           </div>

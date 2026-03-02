@@ -40,7 +40,7 @@ export function MoviePosterCard({
 
   return (
     <div
-      className={["relative flex-shrink-0 group", className ?? ""].join(" ")}
+      className={["relative flex-shrink-0", className ?? ""].join(" ")}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -54,11 +54,11 @@ export function MoviePosterCard({
           src={movie.poster_url}
           alt={movie.title}
           className={[
-            "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+            "w-full h-full object-cover",
             imageClassName ?? "",
           ].join(" ")}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0" />
       </button>
 
       <div className="pt-2">
@@ -75,7 +75,7 @@ export function MoviePosterCard({
           <MovieHoverCard
             movie={movie}
             onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseLeave={handleMouseLeave}
           />
         )}
       </AnimatePresence>
