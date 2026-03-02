@@ -24,6 +24,8 @@ import {
   removeFromFavouritesList,
   removeFromWatchlist,
   addToHistoryWatch,
+  getWatchProgress,
+  upsertWatchProgress,
 } from "@/api/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { errorToast, successToast, warningToast } from "@/components/ui/toast";
@@ -66,6 +68,15 @@ const WatchMoviePage = () => {
   const cachedMovie = useSelector(
     (state: RootState) => state.movie.currentMovie,
   );
+  const [watchProgress, setWatchProgress] = useState<{
+    currentTime: number;
+    duration?: number;
+    playbackRate?: number;
+  } | null>(null);
+  const lastProgressRef = React.useRef({ currentTime: 0, duration: 0 });
+  const saveIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,21 +102,61 @@ const WatchMoviePage = () => {
   // Ghi lịch sử xem phim khi vào trang
   useEffect(() => {
     const recordWatchHistory = async () => {
-      // Chỉ ghi lịch sử khi user đã đăng nhập
-      if (!isAuthenticated) {
-        return;
-      }
-
+      if (!isAuthenticated) return;
       try {
         await addToHistoryWatch({ movieId });
-        console.log("Watch history recorded for movie:", movieId);
       } catch (error) {
-        // Không hiện lỗi cho user, chỉ log
         console.error("Error recording watch history:", error);
       }
     };
-
     recordWatchHistory();
+  }, [movieId, isAuthenticated]);
+
+  // Lấy tiến độ + cấu hình xem khi vào trang (user đăng nhập)
+  useEffect(() => {
+    if (!movieId || !isAuthenticated) return;
+    let cancelled = false;
+    getWatchProgress(movieId).then((data) => {
+      if (!cancelled && data) {
+        setWatchProgress({
+          currentTime: data.currentTime ?? 0,
+          duration: data.duration,
+          playbackRate: data.playbackRate,
+        });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [movieId, isAuthenticated]);
+
+  // Lưu tiến độ định kỳ (mỗi 10s) và khi rời trang
+  useEffect(() => {
+    if (!isAuthenticated || !movieId) return;
+
+    const saveProgress = async () => {
+      const { currentTime, duration } = lastProgressRef.current;
+      if (currentTime <= 0) return;
+      try {
+        await upsertWatchProgress({
+          movie_id: movieId,
+          current_time: Math.floor(currentTime),
+          duration: duration > 0 ? Math.floor(duration) : undefined,
+        });
+      } catch (error) {
+        console.error("Error saving watch progress:", error);
+      }
+    };
+
+    saveIntervalRef.current = setInterval(saveProgress, 10000);
+
+    return () => {
+      if (saveIntervalRef.current) {
+        clearInterval(saveIntervalRef.current);
+        saveIntervalRef.current = null;
+      }
+      saveProgress();
+    };
   }, [movieId, isAuthenticated]);
 
   const handleWatchlistToggle = async () => {
@@ -209,6 +260,31 @@ const WatchMoviePage = () => {
           poster={movie.backdrop_url || undefined}
           title={movie.title}
           className="w-[90vw] rounded-sm bg-black relative aspect-video max-h-[90vh] mx-auto"
+          initialCurrentTime={watchProgress?.currentTime}
+          initialPlaybackRate={watchProgress?.playbackRate}
+          onTimeChange={(currentTime, duration) => {
+            lastProgressRef.current = { currentTime, duration };
+          }}
+          onPause={(currentTime, duration) => {
+            lastProgressRef.current = { currentTime, duration };
+            if (!isAuthenticated || !movieId || currentTime <= 0) return;
+            upsertWatchProgress({
+              movie_id: movieId,
+              current_time: Math.floor(currentTime),
+              duration: duration > 0 ? Math.floor(duration) : undefined,
+            }).catch((err) =>
+              console.error("Error saving progress on pause:", err),
+            );
+          }}
+          onPlaybackRateChange={(playbackRate) => {
+            if (!isAuthenticated || !movieId) return;
+            upsertWatchProgress({
+              movie_id: movieId,
+              playback_rate: playbackRate,
+            }).catch((err) =>
+              console.error("Error saving playback rate:", err),
+            );
+          }}
         />
 
         {/* 3.Movie Title */}

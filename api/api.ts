@@ -72,7 +72,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Movies API
@@ -189,7 +189,7 @@ export const searchMovies = async (keyword: string) => {
 export const loginUser = async (
   username: string,
   password: string,
-  turnstileToken: string
+  turnstileToken: string,
 ) => {
   try {
     const res = await apiClient.post("/auth/login", {
@@ -219,7 +219,7 @@ export const registerUser = async (
   username: string,
   password: string,
   displayName: string,
-  turnstileToken: string
+  turnstileToken: string,
 ) => {
   try {
     const res = await apiClient.post("/auth/register", {
@@ -608,6 +608,75 @@ export const getAverageRatingForMovie = async (movieId: string | number) => {
   } catch (error: any) {
     console.error("Error fetching average rating:", error.response?.data);
     if (error.response && error.response.data) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error("Network or server error occurred");
+  }
+};
+
+// Watch progress API (tiến độ + cấu hình xem)
+
+export type WatchProgressData = {
+  currentTime: number;
+  duration?: number;
+  playbackRate?: number;
+  quality?: string | null;
+  subtitleLang?: string | null;
+  subtitleEnabled?: boolean;
+  skipIntro?: boolean;
+  updatedAt?: string;
+} | null;
+
+/**
+ * Lấy tiến độ + cấu hình xem cho một phim (user đăng nhập).
+ * GET /api/users/me/watch-progress?movie_id=...
+ */
+export const getWatchProgress = async (
+  movieId: string | number,
+): Promise<WatchProgressData> => {
+  try {
+    const res = await apiClient.get("/users/me/watch-progress", {
+      params: { movie_id: movieId },
+    });
+    if (res.data && res.data.data !== undefined) {
+      return res.data.data;
+    }
+    return null;
+  } catch (error: any) {
+    if (error.response?.status === 404) return null;
+    console.error("Error fetching watch progress:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    return null;
+  }
+};
+
+export type UpsertWatchProgressPayload = {
+  movie_id: string | number;
+  current_time?: number;
+  duration?: number;
+  playback_rate?: number;
+  quality?: string | null;
+  subtitle_lang?: string | null;
+  subtitle_enabled?: boolean;
+  skip_intro?: boolean;
+};
+
+/**
+ * Lưu tiến độ + cấu hình xem (upsert). Chỉ gửi field cần cập nhật.
+ * PUT /api/users/me/watch-progress
+ */
+export const upsertWatchProgress = async (
+  payload: UpsertWatchProgressPayload,
+) => {
+  try {
+    const res = await apiClient.put("/users/me/watch-progress", payload);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error saving watch progress:", error.response?.data);
+    if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
     throw new Error("Network or server error occurred");
