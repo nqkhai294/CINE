@@ -1,6 +1,4 @@
-import { user } from "@heroui/theme";
 import axios from "axios";
-import { use } from "react";
 
 const API_URL = "http://localhost:4200/api";
 
@@ -57,8 +55,10 @@ apiClient.interceptors.response.use(
 
       // Còn lại là token hết hạn thật sự
       // Clear localStorage
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
 
       // Call logout callback nếu có
       if (logoutCallback) {
@@ -156,6 +156,26 @@ export const getSimilarMovies = async (id: string | number) => {
     return [];
   } catch (error) {
     console.error("Error fetching similar movies:", error);
+    return [];
+  }
+};
+
+// Recommendations: genres (cá nhân hóa)
+export type RecommendedGenre = {
+  genre_name: string;
+  genre_id: string;
+  total_score: string;
+};
+
+export const getRecommendedGenres = async (): Promise<RecommendedGenre[]> => {
+  try {
+    const res = await apiClient.get("/recommendations/genres");
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    return [];
+  } catch (error: any) {
+    console.error("Error fetching recommended genres:", error.response?.data);
     return [];
   }
 };
@@ -545,6 +565,27 @@ export const getMoviesByGenre = async (genreId: string | number) => {
       throw new Error(error.response.data.message);
     }
     throw new Error("Network or server error occurred");
+  }
+};
+
+/**
+ * Get top movies by genre (Home rows)
+ * GET /api/movies/genre/:genreId
+ * Response: { data: Movie[] }
+ */
+export const getTopMoviesByGenre = async (
+  genreId: string | number,
+  limit = 10,
+) => {
+  try {
+    const res = await apiClient.get(`/movies/genre/${genreId}`);
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data.slice(0, limit);
+    }
+    return [];
+  } catch (error: any) {
+    console.error("Error fetching top movies by genre:", error.response?.data);
+    return [];
   }
 };
 

@@ -6,7 +6,6 @@ import MovieBanner from "@/components/movie/MovieBanner";
 import MovieComments from "@/components/movie/MovieComments";
 import MovieInfo from "@/components/movie/MovieInfo";
 import MovieTabs from "@/components/movie/MovieTabs";
-import TopMoviesWeek from "@/components/movie/TopMoviesWeek";
 import { errorToast } from "@/components/ui/toast";
 import { setCurrentMovie } from "@/store/slices/movieSlice";
 import { Movie } from "@/types";
