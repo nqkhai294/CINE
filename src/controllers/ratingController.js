@@ -19,10 +19,8 @@ module.exports.addOrUpdateRating = async (req, res) => {
     }
     const scoreNum = parseInt(score, 10);
 
-    if (scoreNum < 1 || scoreNum > 10) {
-      return res
-        .status(400)
-        .json({ message: "Score must be between 1 and 10" });
+    if (scoreNum < 1 || scoreNum > 5) {
+      return res.status(400).json({ message: "Score must be between 1 and 5" });
     }
 
     /* Add or Update 
@@ -43,7 +41,7 @@ module.exports.addOrUpdateRating = async (req, res) => {
 
     // Run trigger cập nhật avg_rating trong database
     console.log(
-      `Rating cho phim ${movieId} đã được cập nhật. Trigger sẽ tự cập nhật avg_rating`
+      `Rating cho phim ${movieId} đã được cập nhật. Trigger sẽ tự cập nhật avg_rating`,
     );
 
     res.status(200).json({
