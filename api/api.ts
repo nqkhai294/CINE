@@ -160,6 +160,29 @@ export const getSimilarMovies = async (id: string | number) => {
   }
 };
 
+// Movies progressing (user is currently watching)
+export type ProgressingMovie = {
+  movie_id: number;
+  title: string;
+  backdrop_url: string;
+  progress_seconds: number;
+  duration: number;
+  updated_at: string;
+};
+
+export const getProgressingMovies = async (): Promise<ProgressingMovie[]> => {
+  try {
+    const res = await apiClient.get("/movies/progressing");
+    if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    return [];
+  } catch (error: any) {
+    console.error("Error fetching progressing movies:", error.response?.data);
+    return [];
+  }
+};
+
 // Recommendations: genres (cá nhân hóa)
 export type RecommendedGenre = {
   genre_name: string;
