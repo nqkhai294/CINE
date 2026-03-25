@@ -55,21 +55,24 @@ module.exports.getWatchProgress = async (req, res) => {
 /**
  * PUT/PATCH /api/users/me/watch-progress
  * Body: { movie_id, current_time?, duration?, playback_rate?, quality?, subtitle_lang?, subtitle_enabled?, skip_intro? }
- * Upsert theo (user_id, movie_id). Chỉ cập nhật các field được gửi (partial update).
  */
 module.exports.upsertWatchProgress = async (req, res) => {
   try {
     const userId = req.user.id;
     const b = req.body;
-    // Chấp nhận cả snake_case và camelCase từ frontend
-    const movie_id = b.movie_id ?? b.movieId;
-    const current_time = b.current_time ?? b.currentTime;
+
+    const movie_id = b.movie_id;
+    const current_time = b.current_time;
     const duration = b.duration;
-    const playback_rate = b.playback_rate ?? b.playbackRate;
+    const playback_rate = b.playback_rate;
     const quality = b.quality;
-    const subtitle_lang = b.subtitle_lang ?? b.subtitleLang;
-    const subtitle_enabled = b.subtitle_enabled ?? b.subtitleEnabled;
-    const skip_intro = b.skip_intro ?? b.skipIntro;
+    const subtitle_lang = b.subtitle_lang;
+    const subtitle_enabled = b.subtitle_enabled;
+    const skip_intro = b.skip_intro;
+
+    const currentPercent = current_time / duration;
+    let finalViewCount = 1;
+    let finalMaxProgress = currentPercent;
 
     if (!movie_id) {
       return res.status(400).json({
@@ -90,7 +93,7 @@ module.exports.upsertWatchProgress = async (req, res) => {
     // Lấy bản ghi hiện có (nếu có) để partial update — chỉ ghi đè field có trong body
     const existing = await db.query(
       `SELECT progress_seconds, duration, playback_rate, quality,
-              subtitle_lang, subtitle_enabled, skip_intro
+              subtitle_lang, subtitle_enabled, skip_intro, view_count, max_progress_percent
        FROM user_watch_progress
        WHERE user_id = $1 AND movie_id = $2`,
       [userId, movie_id],
@@ -105,6 +108,29 @@ module.exports.upsertWatchProgress = async (req, res) => {
       skip_intro: false,
     };
     const existingRow = existing.rows[0];
+
+    console.log("Existing watch progress:", existingRow);
+
+    // Logic xử lý tăng view_count
+    if (existingRow) {
+      console.log("Existing view count:", existingRow.view_count);
+      const oldPercent = existingRow.progress_seconds / existingRow.duration;
+
+      // Tăng view count nếu user đã xem qua 85% phim và lần xem mới < 15%
+      if (oldPercent >= 0.85 && currentPercent < 0.15) {
+        finalViewCount = existingRow.view_count + 1;
+      } else {
+        finalViewCount = existingRow.view_count;
+      }
+    }
+
+    // Logic xử lý max_progress
+    if (existingRow) {
+      if (finalMaxProgress < existingRow.max_progress_percent) {
+        finalMaxProgress = existingRow.max_progress_percent;
+      }
+    }
+
     const merged = {
       progress_seconds:
         current_time !== undefined && current_time !== null
@@ -134,14 +160,16 @@ module.exports.upsertWatchProgress = async (req, res) => {
         skip_intro !== undefined
           ? Boolean(skip_intro)
           : (existingRow?.skip_intro ?? def.skip_intro),
+      view_count: finalViewCount,
+      max_progress_percent: finalMaxProgress,
     };
 
     const query = {
       text: `INSERT INTO user_watch_progress (
                user_id, movie_id, progress_seconds, duration,
-               playback_rate, quality, subtitle_lang, subtitle_enabled, skip_intro
+               playback_rate, quality, subtitle_lang, subtitle_enabled, skip_intro, view_count, max_progress_percent
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (user_id, movie_id)
              DO UPDATE SET
                progress_seconds = EXCLUDED.progress_seconds,
@@ -151,6 +179,8 @@ module.exports.upsertWatchProgress = async (req, res) => {
                subtitle_lang = EXCLUDED.subtitle_lang,
                subtitle_enabled = EXCLUDED.subtitle_enabled,
                skip_intro = EXCLUDED.skip_intro,
+               view_count = EXCLUDED.view_count,
+               max_progress_percent = EXCLUDED.max_progress_percent,
                updated_at = CURRENT_TIMESTAMP
              RETURNING *`,
       values: [
@@ -163,6 +193,8 @@ module.exports.upsertWatchProgress = async (req, res) => {
         merged.subtitle_lang,
         merged.subtitle_enabled,
         merged.skip_intro,
+        merged.view_count,
+        merged.max_progress_percent,
       ],
     };
 
@@ -179,6 +211,8 @@ module.exports.upsertWatchProgress = async (req, res) => {
         subtitleLang: row.subtitle_lang,
         subtitleEnabled: Boolean(row.subtitle_enabled),
         skipIntro: Boolean(row.skip_intro),
+        viewCount: row.view_count,
+        maxProgressPercent: row.max_progress_percent,
         updatedAt: row.updated_at,
       },
     });

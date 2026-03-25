@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware");
 
 const movieController = require("../controllers/movieController");
 const searchController = require("../controllers/searchController");
@@ -28,6 +29,8 @@ router.get("/highest-rate", movieController.getHighestTMDBMovies);
 router.get("/newest", movieController.getTenNewestMovies);
 
 router.get("/genre/:id", movieController.getGenresRecommendationsForUser);
+
+router.get("/progressing", protect, movieController.getMovieProgressingForUser);
 
 /**
  * API: GET /api/movies/:id

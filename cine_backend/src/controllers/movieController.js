@@ -183,7 +183,6 @@ module.exports.getTenNewestMovies = async (req, res) => {
 module.exports.getGenresRecommendationsForUser = async (req, res) => {
   try {
     const genreId = req.params.id;
-    console.log("🔍 Lấy phim theo thể loại genreId:", genreId);
     const query = {
       text: `select m.*, coalesce(array_agg(g.name), '{}') as genres
              from movies m
@@ -204,6 +203,34 @@ module.exports.getGenresRecommendationsForUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in getGenresRecommendationsForUser:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.getMovieProgressingForUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const query = {
+      text: `select m.id as movie_id, m.title, m.backdrop_url, 
+             uwp.progress_seconds, uwp.duration, uwp.updated_at
+             from user_watch_progress uwp
+             join movies m on uwp.movie_id = m.id
+             where uwp.user_id = $1 and uwp.progress_seconds > 0 and (uwp.progress_seconds / NULLIF(uwp.duration, 0)) < 0.95
+             group by m.id, m.title, m.backdrop_url, uwp.progress_seconds, uwp.duration, uwp.updated_at
+             order by uwp.updated_at desc;`,
+      values: [userId],
+    };
+
+    const { rows } = await db.query(query);
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error in getMovieProgressingForUser:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
