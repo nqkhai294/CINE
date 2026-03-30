@@ -1,3 +1,3 @@
 1. run virtual python
-   .\venv\Scripts\activate
+   .\.venv\Scripts\Activate.ps1
    python api.py

@@ -41,12 +41,12 @@ const getTrailerKey = async (movieId) => {
       `${TMDB_BASE_URL}/movie/${movieId}/videos`,
       {
         params: { api_key: TMDB_API_KEY, language: "en-US" },
-      }
+      },
     );
 
     const videos = response.data.results;
     const trailer = videos.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer"
+      (video) => video.site === "YouTube" && video.type === "Trailer",
     );
 
     if (trailer) {
@@ -65,7 +65,7 @@ async function seedCreditsForMovie(movieId) {
       `${TMDB_BASE_URL}/movie/${movieId}/credits`,
       {
         params: { api_key: TMDB_API_KEY, language: "en-US" },
-      }
+      },
     );
 
     const crew = response.data.crew;
@@ -129,10 +129,10 @@ async function seedCreditsForMovie(movieId) {
 
 const seedMovies = async () => {
   try {
-    console.log("Bắt đầu lấy dữ liệu 1000 phim (50 trang)...");
+    console.log("Bắt đầu lấy dữ liệu 10000 phim (500 trang)...");
     let moviesToInsert = [];
-    for (let page = 1; page <= 50; page++) {
-      // Lấy 1000 phim (50 trang)
+    for (let page = 1; page <= 500; page++) {
+      // Lấy 1000 phim (500 trang)
       const response = await axios.get(`${TMDB_BASE_URL}/movie/popular`, {
         params: {
           api_key: TMDB_API_KEY,
@@ -146,7 +146,7 @@ const seedMovies = async () => {
     }
 
     console.log(
-      `Lấy được ${moviesToInsert.length} phim. Bắt đầu chèn/cập nhật CSDL...`
+      `Lấy được ${moviesToInsert.length} phim. Bắt đầu chèn/cập nhật CSDL...`,
     );
     let insertedOrUpdatedCount = 0;
 
@@ -211,10 +211,10 @@ const seedMovies = async () => {
     // --- Vòng lặp 2: Cập nhật TRAILER (Tối ưu) ---
     console.log("Đang tìm các phim thiếu trailer để cập nhật...");
     const { rows: moviesToUpdateTrailer } = await db.query(
-      "SELECT id FROM Movies WHERE trailer_url IS NULL OR trailer_url = ''"
+      "SELECT id FROM Movies WHERE trailer_url IS NULL OR trailer_url = ''",
     );
     console.log(
-      `Tìm thấy ${moviesToUpdateTrailer.length} phim cần cập nhật trailer.`
+      `Tìm thấy ${moviesToUpdateTrailer.length} phim cần cập nhật trailer.`,
     );
     let updatedTrailerCount = 0;
     for (const movie of moviesToUpdateTrailer) {
@@ -229,7 +229,7 @@ const seedMovies = async () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(
-      `Đã cập nhật trailer thành công cho ${updatedTrailerCount} phim.`
+      `Đã cập nhật trailer thành công cho ${updatedTrailerCount} phim.`,
     );
 
     // --- Vòng lặp 3: Cập nhật CREDITS (Tối ưu) ---
@@ -237,10 +237,10 @@ const seedMovies = async () => {
     const { rows: moviesToUpdateCredits } = await db.query(
       `SELECT M.id FROM Movies M
        LEFT JOIN Movie_Directors MD ON M.id = MD.movie_id
-       WHERE MD.movie_id IS NULL`
+       WHERE MD.movie_id IS NULL`,
     );
     console.log(
-      `Tìm thấy ${moviesToUpdateCredits.length} phim cần cập nhật credits.`
+      `Tìm thấy ${moviesToUpdateCredits.length} phim cần cập nhật credits.`,
     );
     let updatedCreditsCount = 0;
     for (const movie of moviesToUpdateCredits) {
@@ -251,17 +251,17 @@ const seedMovies = async () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(
-      `Đã cập nhật credits thành công cho ${updatedCreditsCount} phim.`
+      `Đã cập nhật credits thành công cho ${updatedCreditsCount} phim.`,
     );
 
     // --- (PHẦN MỚI) Vòng lặp 4: Cập nhật RUNTIME (Tối ưu) ---
     console.log("Đang tìm các phim thiếu thời lượng (runtime) để cập nhật...");
     // 1. Tìm các phim chưa có runtime
     const { rows: moviesToUpdateRuntime } = await db.query(
-      "SELECT id FROM Movies WHERE runtime IS NULL OR runtime = 0" // Thêm 'OR runtime = 0'
+      "SELECT id FROM Movies WHERE runtime IS NULL OR runtime = 0", // Thêm 'OR runtime = 0'
     );
     console.log(
-      `Tìm thấy ${moviesToUpdateRuntime.length} phim cần cập nhật runtime.`
+      `Tìm thấy ${moviesToUpdateRuntime.length} phim cần cập nhật runtime.`,
     );
 
     let updatedRuntimeCount = 0;
@@ -291,7 +291,7 @@ const seedMovies = async () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     console.log(
-      `Đã cập nhật runtime thành công cho ${updatedRuntimeCount} phim.`
+      `Đã cập nhật runtime thành công cho ${updatedRuntimeCount} phim.`,
     );
   } catch (error) {
     console.error("Lỗi khi seeding movies:", error.message);
