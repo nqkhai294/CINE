@@ -63,13 +63,12 @@ module.exports.getSimilarMovies = async (req, res) => {
 
       // A. Gọi Python Service
       try {
-        // SỬA LỖI 2: Dùng 127.0.0.1 thay vì localhost
         const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
         if (response.data && response.data.status === "ok") {
           recommendedIds = response.data.data;
         }
       } catch (err) {
-        console.error("❌ Lỗi Python Service:", err.message);
+        console.error("Lỗi Python Service:", err.message);
         return { result: { status: "ok" }, data: [] };
       }
 
@@ -97,13 +96,12 @@ module.exports.getSimilarMovies = async (req, res) => {
       );
 
       // C. Sắp xếp kết quả
-      // SỬA LỖI 1: Chuyển ID sang String để Map khớp với DB (vì DB trả về bigint dạng String)
       const moviesMap = new Map(
         dbResult.rows.map((movie) => [String(movie.id), movie]),
       );
 
       const sortedMovies = recommendedIds
-        .map((id) => moviesMap.get(String(id))) // Ép kiểu id từ Python sang String luôn
+        .map((id) => moviesMap.get(String(id)))
         .filter((movie) => movie !== undefined);
 
       const finalResult = {
@@ -130,6 +128,52 @@ module.exports.getSimilarMovies = async (req, res) => {
     if (pendingRequests.has(cacheKey)) {
       pendingRequests.delete(cacheKey);
     }
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.getContentBasedRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const query = {
+      text: `select * from ratings where user_id = $1`,
+      values: [userId],
+    };
+    const { rows } = await db.query(query);
+
+    const interactions = rows.map((r) => ({
+      movie_id: Number(r.movie_id),
+      rating: Number(r.rating),
+    }));
+
+    const response = await axios.post(`${URL_ML}/recommend/content-based`, {
+      user_id: userId,
+      top_n: 15,
+      interactions: interactions,
+    });
+
+    if (response.data && response.status === "ok") {
+      listId = response.data;
+
+      const query = {
+        text: `SELECT 
+                m.*,
+                COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+                FROM movies m
+                LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+                LEFT JOIN genres g ON mg.genre_id = g.id
+                WHERE m.id = ANY($1::int[])
+                GROUP BY m.id`,
+        values: [listId],
+      };
+      const { rows } = await db.query(query);
+      return res.status(200).json(rows);
+    } else {
+      return res.status(500).json({ message: "Lỗi Python Service" });
+    }
+  } catch (error) {
+    console.error("Lỗi CB:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
