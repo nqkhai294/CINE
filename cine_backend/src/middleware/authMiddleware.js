@@ -39,3 +39,28 @@ module.exports.protect = async (req, res, next) => {
     return res.status(401).json({ message: "Not authorized, no token" });
   }
 };
+
+/**
+ * Nếu có Bearer token hợp lệ thì gán req.user; nếu không có hoặc lỗi thì req.user = undefined.
+ * Dùng cho các API public nhưng có thể cá nhân hóa khi đã đăng nhập.
+ */
+module.exports.optionalProtect = async (req, res, next) => {
+  req.user = undefined;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const { rows } = await db.query(
+        `SELECT id, username FROM users WHERE id = $1`,
+        [decoded.id],
+      );
+      if (rows[0]) req.user = rows[0];
+    } catch (e) {
+      // Token hết hạn / sai: coi như khách, không trả 401
+    }
+  }
+  next();
+};

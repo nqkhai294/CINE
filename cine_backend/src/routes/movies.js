@@ -1,22 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware");
+const { protect, optionalProtect } = require("../middleware/authMiddleware");
 
 const movieController = require("../controllers/movieController");
 const searchController = require("../controllers/searchController");
 
 /**
  * API: GET /api/movies
- * Mô tả: Lấy danh sách tất cả phim
+ * Query: page, limit, keyword (tùy chọn). optionalProtect + JWT + rating → rerank pool 500 (có hoặc không keyword).
+ * Response: { data, pagination, personalized }
  */
 
-router.get("/", movieController.getAllMovies);
+router.get("/", optionalProtect, movieController.getAllMovies);
 
 /**
- * API: GET /api/movies/search?keyword=xyz
- * Mô tả: Tìm kiếm phim theo từ khóa
+ * API: GET /api/movies/search?keyword=&page=&limit=
+ * Phân trang; có JWT + rating → rerank global trong pool 200.
  */
-router.get("/search", searchController.searchMovies);
+router.get("/search", optionalProtect, searchController.searchMovies);
 
 /**
  * API: GET /api/movies/highest-rate

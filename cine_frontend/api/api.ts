@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Movie } from "@/types";
 
 const API_URL = "http://localhost:4200/api";
 
@@ -76,22 +77,77 @@ apiClient.interceptors.response.use(
 );
 
 // Movies API
+
+export type MoviesListPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type GetMoviesResult = {
+  data: Movie[];
+  pagination: MoviesListPagination;
+  /** true khi đã đăng nhập, có rating, có keyword và ML rerank thành công */
+  personalized?: boolean;
+};
+
 /**
- * Get all movies
+ * Danh sách phim có phân trang (GET /api/movies)
  */
-
-export const getMovies = async () => {
+export const getMovies = async (params?: {
+  page?: number;
+  limit?: number;
+  keyword?: string;
+}): Promise<GetMoviesResult> => {
+  const empty: GetMoviesResult = {
+    data: [],
+    pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    personalized: false,
+  };
   try {
-    const response = await apiClient.get("/movies");
+    const response = await apiClient.get("/movies", {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        ...(params?.keyword?.trim()
+          ? { keyword: params.keyword.trim() }
+          : {}),
+      },
+    });
 
-    if (response.data && Array.isArray(response.data.data)) {
-      return response.data.data;
+    const data = response.data?.data;
+    const pagination = response.data?.pagination;
+
+    if (Array.isArray(data) && pagination && typeof pagination === "object") {
+      return {
+        data,
+        pagination: {
+          page: Number(pagination.page) || 1,
+          limit: Number(pagination.limit) || 20,
+          total: Number(pagination.total) || 0,
+          totalPages: Number(pagination.totalPages) || 0,
+        },
+        personalized: Boolean(response.data?.personalized),
+      };
     }
 
-    return [];
+    if (Array.isArray(data)) {
+      return {
+        data,
+        pagination: {
+          page: 1,
+          limit: data.length,
+          total: data.length,
+          totalPages: 1,
+        },
+      };
+    }
+
+    return empty;
   } catch (error) {
     console.error("Error fetching movies:", error);
-    return [];
+    return empty;
   }
 };
 
@@ -203,23 +259,72 @@ export const getRecommendedGenres = async (): Promise<RecommendedGenre[]> => {
   }
 };
 
+export type SearchMoviesPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SearchMoviesResult = {
+  data: Movie[];
+  pagination: SearchMoviesPagination;
+  personalized?: boolean;
+};
+
 /**
- * Search movies by keyword
+ * Tìm phim theo từ khóa (navbar / dropdown), có phân trang.
  */
-export const searchMovies = async (keyword: string) => {
+export const searchMovies = async (
+  keyword: string,
+  params?: { page?: number; limit?: number },
+): Promise<SearchMoviesResult> => {
+  const empty: SearchMoviesResult = {
+    data: [],
+    pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    personalized: false,
+  };
   try {
     const res = await apiClient.get(`/movies/search`, {
-      params: { keyword },
+      params: {
+        keyword,
+        page: params?.page,
+        limit: params?.limit,
+      },
     });
 
-    if (res.data && res.data.result.status === "ok") {
-      return res.data.data;
+    if (res.data && res.data.result?.status === "ok") {
+      const data = res.data.data;
+      const p = res.data.pagination;
+      if (Array.isArray(data) && p) {
+        return {
+          data,
+          pagination: {
+            page: Number(p.page) || 1,
+            limit: Number(p.limit) || 20,
+            total: Number(p.total) || 0,
+            totalPages: Number(p.totalPages) || 0,
+          },
+          personalized: Boolean(res.data.personalized),
+        };
+      }
+      if (Array.isArray(data)) {
+        return {
+          data,
+          pagination: {
+            page: 1,
+            limit: data.length,
+            total: data.length,
+            totalPages: 1,
+          },
+        };
+      }
     }
 
-    return [];
+    return empty;
   } catch (error) {
     console.error("Error searching movies:", error);
-    return [];
+    return empty;
   }
 };
 

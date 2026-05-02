@@ -1,18 +1,173 @@
-const { text } = require("express");
 const db = require("../db");
+const {
+  getUserRatingInteractions,
+  rerankSearchWithMl,
+} = require("../utils/searchRerank");
 
+const MAX_PERSONALIZED_POOL = 500;
+
+async function fetchMoviesByIdsOrdered(ids) {
+  if (!ids.length) return [];
+  const { rows } = await db.query(
+    `SELECT m.id, m.title, m.poster_url, m.avg_rating
+     FROM movies m
+     WHERE m.id = ANY($1::int[])
+     ORDER BY array_position($2::int[], m.id::int)`,
+    [ids, ids],
+  );
+  return rows;
+}
+
+async function fetchKeywordPageSql(keyword, sqlOffset, sqlLimit) {
+  if (sqlLimit <= 0) return [];
+  const { rows } = await db.query(
+    `SELECT m.id, m.title, m.poster_url, m.avg_rating
+     FROM movies m
+     WHERE m.title ILIKE '%' || $1 || '%'
+     ORDER BY m.release_year DESC NULLS LAST
+     OFFSET $2 LIMIT $3`,
+    [keyword, sqlOffset, sqlLimit],
+  );
+  return rows;
+}
+
+async function fetchAllMoviesPageSql(sqlOffset, sqlLimit) {
+  if (sqlLimit <= 0) return [];
+  const { rows } = await db.query(
+    `SELECT m.id, m.title, m.poster_url, m.avg_rating
+     FROM movies m
+     ORDER BY m.release_year DESC NULLS LAST
+     OFFSET $1 LIMIT $2`,
+    [sqlOffset, sqlLimit],
+  );
+  return rows;
+}
+
+/**
+ * GET /api/movies
+ * Query: page, limit, keyword (tùy chọn).
+ * Có JWT + có rating: rerank global trên pool tối đa MAX_PERSONALIZED_POOL
+ */
 module.exports.getAllMovies = async (req, res) => {
   try {
-    const { rows } = await db.query(
-      "SELECT id, title, poster_url, avg_rating FROM movies ORDER BY release_year DESC",
-    );
+    const keyword = (req.query.keyword || "").trim();
+    const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
+    let limit = parseInt(String(req.query.limit), 10) || 20;
+    limit = Math.min(100, Math.max(1, limit));
+    const offset = (page - 1) * limit;
+
+    const whereClause = keyword ? `WHERE m.title ILIKE '%' || $1 || '%'` : "";
+
+    const countSql = `SELECT COUNT(*)::int AS total FROM movies m ${whereClause}`;
+    const countParams = keyword ? [keyword] : [];
+    const { rows: countRows } = await db.query(countSql, countParams);
+    const total = countRows[0].total;
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    let data = [];
+    let personalized = false;
+
+    if (!keyword) {
+      if (req.user) {
+        const interactions = await getUserRatingInteractions(req.user.id);
+        if (interactions.length > 0) {
+          const { rows: poolRows } = await db.query(
+            `SELECT m.id FROM movies m ORDER BY m.release_year DESC NULLS LAST LIMIT $1`,
+            [MAX_PERSONALIZED_POOL],
+          );
+          const poolIds = poolRows.map((r) => Number(r.id));
+          const M = poolIds.length;
+
+          if (M === 0) {
+            data = [];
+          } else {
+            const mlOrder = await rerankSearchWithMl(interactions, poolIds);
+            const rankedIds = mlOrder || poolIds;
+            personalized = Boolean(mlOrder);
+
+            const start = offset;
+            const end = Math.min(start + limit, total);
+
+            if (start >= total) {
+              data = [];
+            } else if (end <= M) {
+              data = await fetchMoviesByIdsOrdered(rankedIds.slice(start, end));
+            } else if (start >= M) {
+              data = await fetchAllMoviesPageSql(start, end - start);
+            } else {
+              const idsHead = rankedIds.slice(start, M);
+              const headRows = await fetchMoviesByIdsOrdered(idsHead);
+              const tailRows = await fetchAllMoviesPageSql(M, end - M);
+              data = [...headRows, ...tailRows];
+            }
+          }
+        } else {
+          const dataSql = `SELECT id, title, poster_url, avg_rating FROM movies m ORDER BY m.release_year DESC NULLS LAST LIMIT $1 OFFSET $2`;
+          const { rows } = await db.query(dataSql, [limit, offset]);
+          data = rows;
+        }
+      } else {
+        const dataSql = `SELECT id, title, poster_url, avg_rating FROM movies m ORDER BY m.release_year DESC NULLS LAST LIMIT $1 OFFSET $2`;
+        const { rows } = await db.query(dataSql, [limit, offset]);
+        data = rows;
+      }
+    } else if (req.user) {
+      const interactions = await getUserRatingInteractions(req.user.id);
+      if (interactions.length > 0) {
+        const { rows: poolRows } = await db.query(
+          `SELECT m.id FROM movies m WHERE m.title ILIKE '%' || $1 || '%' ORDER BY m.release_year DESC NULLS LAST LIMIT $2`,
+          [keyword, MAX_PERSONALIZED_POOL],
+        );
+        const poolIds = poolRows.map((r) => Number(r.id));
+        const M = poolIds.length;
+
+        if (M === 0) {
+          data = [];
+        } else {
+          const mlOrder = await rerankSearchWithMl(interactions, poolIds);
+          const rankedIds = mlOrder || poolIds;
+          personalized = Boolean(mlOrder);
+
+          const start = offset;
+          const end = Math.min(start + limit, total);
+
+          if (start >= total) {
+            data = [];
+          } else if (end <= M) {
+            data = await fetchMoviesByIdsOrdered(rankedIds.slice(start, end));
+          } else if (start >= M) {
+            data = await fetchKeywordPageSql(keyword, start, end - start);
+          } else {
+            const idsHead = rankedIds.slice(start, M);
+            const headRows = await fetchMoviesByIdsOrdered(idsHead);
+            const tailRows = await fetchKeywordPageSql(keyword, M, end - M);
+            data = [...headRows, ...tailRows];
+          }
+        }
+      } else {
+        const dataSql = `SELECT id, title, poster_url, avg_rating FROM movies m ${whereClause} ORDER BY m.release_year DESC NULLS LAST LIMIT $2 OFFSET $3`;
+        const { rows } = await db.query(dataSql, [keyword, limit, offset]);
+        data = rows;
+      }
+    } else {
+      const dataSql = `SELECT id, title, poster_url, avg_rating FROM movies m ${whereClause} ORDER BY m.release_year DESC NULLS LAST LIMIT $2 OFFSET $3`;
+      const { rows } = await db.query(dataSql, [keyword, limit, offset]);
+      data = rows;
+    }
+
     res.status(200).json({
       result: {
         message: "success",
         status: "ok",
       },
-      data: rows,
-      total: rows.length,
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+      personalized,
     });
   } catch (error) {
     console.error("Lỗi khi lấy danh sách phim:", error);
@@ -111,20 +266,6 @@ module.exports.getMovieById = async (req, res) => {
 
 module.exports.getHighestTMDBMovies = async (req, res) => {
   try {
-    // Join 3 table để lấy cả thể loại
-    // const query = {
-    //   text: `SELECT
-    //       m.*,
-    //       COALESCE(ARRAY_AGG(g.name), '{}') AS genres
-    //     FROM Movies m
-    //     LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
-    //     LEFT JOIN Genres g ON mg.genre_id = g.id
-    //     where tmdb_vote_count > 20000
-    //     GROUP BY m.id
-    //     ORDER BY m.tmdb_vote_average DESC NULLS LAST
-    //     LIMIT 6`,
-    // };
-
     const query = {
       text: `select m.*, coalesce(array_agg(g.name), '{}') as genres
              from movies m

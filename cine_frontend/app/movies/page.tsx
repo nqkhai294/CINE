@@ -1,16 +1,19 @@
 "use client";
 // Movies Page (/all movies)
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getMovies } from "@/api/api";
 import { Movie } from "@/types";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Image } from "@heroui/image";
 import { Input } from "@heroui/input";
+import { Pagination } from "@heroui/pagination";
 import { AnimatePresence } from "framer-motion";
 import { MovieHoverCard } from "@/components/home/movie-hover-card";
 import { FiSearch, FiX, FiFilm } from "react-icons/fi";
+
+const PAGE_SIZE = 24;
 
 const MovieCard = ({ movie }: { movie: Movie }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -50,9 +53,9 @@ const MovieCard = ({ movie }: { movie: Movie }) => {
           </div>
         </div>
         {/* Rating badge */}
-        {movie.avg_rating > 0 && (
+        {movie.avg_rating != null && Number(movie.avg_rating) > 0 && (
           <div className="absolute top-2 right-2 bg-yellow-500/90 text-black text-xs font-bold px-1.5 py-0.5 rounded">
-            ★ {movie.avg_rating.toFixed(1)}
+            ★ {Number(movie.avg_rating).toFixed(1)}
           </div>
         )}
       </div>
@@ -81,39 +84,59 @@ export default function MoviesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchPersonalized, setSearchPersonalized] = useState(false);
+  const isFirstLoad = useRef(true);
 
-  // Filter movies based on search query
-  const filteredMovies = useMemo(() => {
-    if (!searchQuery.trim()) return movies;
-
-    const query = searchQuery.toLowerCase().trim();
-    return movies.filter((movie) => movie.title.toLowerCase().includes(query));
-  }, [movies, searchQuery]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = searchQuery.trim();
+      setDebouncedSearch((prev) => {
+        if (prev !== next) {
+          setPage(1);
+        }
+        return next;
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   useEffect(() => {
     const fetchMovies = async () => {
-      setIsLoading(true);
+      const first = isFirstLoad.current;
+      if (first) {
+        isFirstLoad.current = false;
+        setIsLoading(true);
+      }
       setError("");
 
       try {
-        const moviesData = await getMovies();
-        if (moviesData && Array.isArray(moviesData)) {
-          setMovies(moviesData);
-        } else {
-          setMovies([]);
-        }
-      } catch (err: any) {
+        const { data, pagination, personalized } = await getMovies({
+          page,
+          limit: PAGE_SIZE,
+          keyword: debouncedSearch || undefined,
+        });
+        setMovies(data);
+        setTotalPages(pagination.totalPages);
+        setTotalCount(pagination.total);
+        setSearchPersonalized(Boolean(personalized));
+      } catch (err: unknown) {
         console.error("Error fetching movies:", err);
-        setError(err.message || "Có lỗi xảy ra khi tải dữ liệu");
+        setError(
+          err instanceof Error ? err.message : "Có lỗi xảy ra khi tải dữ liệu",
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMovies();
-  }, []);
+  }, [page, debouncedSearch]);
 
-  if (isLoading) {
+  if (isLoading && movies.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center pt-24">
         <Spinner size="lg" color="warning" />
@@ -143,14 +166,19 @@ export default function MoviesPage() {
               <h1 className="text-3xl md:text-4xl font-bold text-white">
                 Tất cả phim
               </h1>
-              {movies.length > 0 && (
+              {totalCount > 0 && (
                 <Chip
                   size="lg"
                   variant="flat"
                   color="warning"
                   className="text-white"
                 >
-                  {movies.length} phim
+                  {totalCount} phim
+                </Chip>
+              )}
+              {searchPersonalized && (
+                <Chip size="sm" variant="bordered" className="border-yellow-500/60 text-yellow-400">
+                  Theo gu bạn
                 </Chip>
               )}
             </div>
@@ -189,26 +217,54 @@ export default function MoviesPage() {
 
           <p className="text-gray-400 text-sm">
             Khám phá kho phim đa dạng với hàng ngàn bộ phim hấp dẫn
-            {searchQuery && filteredMovies.length !== movies.length && (
+            {debouncedSearch && totalCount > 0 && (
               <span className="text-yellow-500 ml-2">
-                • Đang hiển thị {filteredMovies.length} / {movies.length} phim
+                • Trang {page} / {Math.max(totalPages, 1)} — {totalCount} kết quả
+                khớp &quot;{debouncedSearch}&quot;
+                {searchPersonalized &&
+                  ` (ưu tiên ${Math.min(500, totalCount)} phim đầu theo nội dung đã xem)`}
+              </span>
+            )}
+            {!debouncedSearch && totalCount > 0 && (
+              <span className="text-gray-500 ml-2">
+                • Trang {page} / {Math.max(totalPages, 1)}
+                {searchPersonalized &&
+                  ` — ưu tiên ${Math.min(500, totalCount)} phim đầu theo nội dung đã xem`}
               </span>
             )}
           </p>
         </div>
 
         {/* Movies Grid */}
-        {filteredMovies.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredMovies.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} />
-            ))}
-          </div>
-        ) : searchQuery ? (
+        {movies.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {movies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-10">
+                <Pagination
+                  total={totalPages}
+                  page={page}
+                  onChange={setPage}
+                  showControls
+                  color="warning"
+                  classNames={{
+                    wrapper: "gap-1",
+                    item: "bg-[#1a2332] text-white min-w-9 w-9 h-9",
+                    cursor: "bg-yellow-500 text-black font-semibold",
+                  }}
+                />
+              </div>
+            )}
+          </>
+        ) : debouncedSearch ? (
           <div className="text-center py-20">
             <FiSearch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg mb-2">
-              Không tìm thấy phim nào với từ khóa "{searchQuery}"
+              Không tìm thấy phim nào với từ khóa &quot;{debouncedSearch}&quot;
             </p>
             <button
               onClick={() => setSearchQuery("")}

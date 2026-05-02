@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@heroui/input";
-import { SearchIcon } from "@/components/icons";
 import { searchMovies } from "@/api/api";
 import { Movie } from "@/types";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { FiSearch, FiX, FiClock, FiTrendingUp } from "react-icons/fi";
+import { FiSearch, FiX, FiTrendingUp } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+
+const NAVBAR_SEARCH_LIMIT = 20;
 
 interface SearchBarProps {
   /** Placeholder text cho input */
@@ -38,29 +39,56 @@ export const SearchBar = ({
 }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [searchMeta, setSearchMeta] = useState({
+    page: 1,
+    totalPages: 0,
+    total: 0,
+  });
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
+  const scrollListRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryRef = useRef("");
+  const searchMetaRef = useRef(searchMeta);
+  const loadingMoreLockRef = useRef(false);
   const router = useRouter();
 
-  // Debounce search
+  queryRef.current = searchQuery.trim();
+  searchMetaRef.current = searchMeta;
+
+  // Debounce search — trang 1
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
+      setSearchMeta({ page: 1, totalPages: 0, total: 0 });
       setShowDropdown(false);
       setSelectedIndex(-1);
+      loadingMoreLockRef.current = false;
       return;
     }
 
+    const kw = searchQuery.trim();
     const timer = setTimeout(async () => {
       setIsSearching(true);
+      loadingMoreLockRef.current = false;
       try {
-        const results = await searchMovies(searchQuery);
-        setSearchResults(results);
+        const res = await searchMovies(kw, {
+          page: 1,
+          limit: NAVBAR_SEARCH_LIMIT,
+        });
+        if (queryRef.current !== kw) return;
+        setSearchResults(res.data);
+        setSearchMeta({
+          page: res.pagination.page,
+          totalPages: res.pagination.totalPages,
+          total: res.pagination.total,
+        });
         setShowDropdown(true);
         setSelectedIndex(-1);
+        scrollListRef.current?.scrollTo({ top: 0 });
       } catch (error) {
         console.error("Search error:", error);
       } finally {
@@ -70,6 +98,60 @@ export const SearchBar = ({
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const handleMovieClick = useCallback(
+    (movie: Movie) => {
+      setShowDropdown(false);
+      setSearchQuery("");
+      setSelectedIndex(-1);
+      if (onMovieSelect) {
+        onMovieSelect(movie);
+      } else {
+        router.push(`/movie/${movie.id}`);
+      }
+    },
+    [onMovieSelect, router],
+  );
+
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMore || isSearching || loadingMoreLockRef.current) return;
+    const kw = searchQuery.trim();
+    if (!kw) return;
+
+    const meta = searchMetaRef.current;
+    if (meta.page >= meta.totalPages || meta.totalPages === 0) return;
+
+    const nextPage = meta.page + 1;
+    loadingMoreLockRef.current = true;
+    setIsLoadingMore(true);
+
+    searchMovies(kw, { page: nextPage, limit: NAVBAR_SEARCH_LIMIT })
+      .then((res) => {
+        if (queryRef.current !== kw) return;
+        setSearchResults((prev) => [...prev, ...res.data]);
+        setSearchMeta((m) => ({ ...m, page: nextPage }));
+      })
+      .catch((e) => console.error("Load more search:", e))
+      .finally(() => {
+        loadingMoreLockRef.current = false;
+        setIsLoadingMore(false);
+      });
+  }, [searchQuery, isLoadingMore, isSearching]);
+
+  const handleResultsScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const el = e.currentTarget;
+      const threshold = 72;
+      if (
+        el.scrollHeight - el.scrollTop - el.clientHeight >
+        threshold
+      ) {
+        return;
+      }
+      handleLoadMore();
+    },
+    [handleLoadMore],
+  );
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -117,25 +199,16 @@ export const SearchBar = ({
           break;
       }
     },
-    [showDropdown, searchResults, selectedIndex]
+    [showDropdown, searchResults, selectedIndex, handleMovieClick],
   );
-
-  const handleMovieClick = (movie: Movie) => {
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSelectedIndex(-1);
-    if (onMovieSelect) {
-      onMovieSelect(movie);
-    } else {
-      router.push(`/movie/${movie.id}`);
-    }
-  };
 
   const handleClear = () => {
     setSearchQuery("");
     setSearchResults([]);
+    setSearchMeta({ page: 1, totalPages: 0, total: 0 });
     setShowDropdown(false);
     setSelectedIndex(-1);
+    loadingMoreLockRef.current = false;
     inputRef.current?.focus();
   };
 
@@ -205,12 +278,22 @@ export const SearchBar = ({
                 <p className="text-gray-400 text-sm mt-3">Đang tìm kiếm...</p>
               </div>
             ) : searchResults.length > 0 ? (
-              <div className="overflow-y-auto max-h-[380px]">
+              <div
+                ref={scrollListRef}
+                onScroll={handleResultsScroll}
+                className="overflow-y-auto max-h-[380px]"
+              >
                 {/* Header */}
-                <div className="px-4 py-2 border-b border-gray-700/50 flex items-center gap-2">
+                <div className="px-4 py-2 border-b border-gray-700/50 flex items-center gap-2 flex-wrap">
                   <FiTrendingUp className="text-yellow-500" />
                   <span className="text-xs text-gray-400 font-medium">
-                    Tìm thấy {searchResults.length} kết quả
+                    Tìm thấy {searchMeta.total} kết quả
+                    {searchMeta.total > searchResults.length && (
+                      <span className="text-gray-500">
+                        {" "}
+                        · Đang hiện {searchResults.length}
+                      </span>
+                    )}
                   </span>
                 </div>
 
@@ -309,6 +392,21 @@ export const SearchBar = ({
                     </button>
                   ))}
                 </div>
+
+                {isLoadingMore && (
+                  <div className="py-3 flex justify-center">
+                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-yellow-500 border-t-transparent" />
+                  </div>
+                )}
+
+                {searchMeta.page >= searchMeta.totalPages &&
+                  searchMeta.totalPages > 0 &&
+                  searchResults.length > 0 &&
+                  !isLoadingMore && (
+                    <p className="text-center text-[11px] text-gray-500 py-2">
+                      Đã hiển thị toàn bộ {searchMeta.total} kết quả
+                    </p>
+                  )}
 
                 {/* Footer hint */}
                 <div className="px-4 py-2 border-t border-gray-700/50 flex items-center justify-between text-xs text-gray-500">

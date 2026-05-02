@@ -34,7 +34,7 @@ module.exports.register = async (req, res) => {
     // Check email and username existence
     const checkUser = await db.query(
       `SELECT * FROM users WHERE email = $1 OR username = $2`,
-      [email, username]
+      [email, username],
     );
 
     if (checkUser.rows.length > 0) {

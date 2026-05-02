@@ -19,6 +19,11 @@ class CBRequest(BaseModel):
     interactions: list[Interaction]
 
 
+class SearchRerankRequest(BaseModel):
+    interactions: list[Interaction]
+    candidate_ids: list[int]
+
+
 def build_user_profile(interactions_df, tfidf_matrix, indices):
     user_profile = np.zeros(tfidf_matrix.shape[1], dtype=float)
     for row in interactions_df:
@@ -103,6 +108,51 @@ def get_content_based_recommendations(request: CBRequest):
     except Exception as e:
         print(f"Content-based recommendation error: {e}")
         return {"status": "error", "data": []}
+
+
+@app.post("/search/re-rank")
+def search_rerank(request: SearchRerankRequest):
+    """
+    Lấy danh sách id phim và interactions (rating) của user từ nodejs, sau đó build_user_profile, rồi sắp xếp 
+    giảm dần theo cosine_similarity.
+    """
+    if tfidf_matrix is None:
+        raise HTTPException(status_code=500, detail="Model is not loaded")
+
+    try:
+        candidate_ids = [int(x) for x in request.candidate_ids]
+        if not candidate_ids:
+            return {"status": "ok", "data": []}
+
+        if not request.interactions:
+            return {"status": "ok", "data": candidate_ids}
+
+        user_profile = build_user_profile(
+            request.interactions, tfidf_matrix, indices
+        )
+        if np.all(user_profile == 0):
+            return {"status": "ok", "data": candidate_ids}
+
+        pairs = []
+        for pos, mid in enumerate(candidate_ids):
+            if mid not in indices:
+                pairs.append((float("-inf"), pos, mid))
+                continue
+            row_idx = indices[mid]
+            vec = tfidf_matrix[row_idx]
+            sim = float(
+                cosine_similarity(
+                    user_profile.reshape(1, -1), vec
+                )[0][0]
+            )
+            pairs.append((sim, pos, mid))
+
+        pairs.sort(key=lambda x: (-x[0], x[1]))
+        sorted_ids = [p[2] for p in pairs]
+        return {"status": "ok", "data": sorted_ids}
+    except Exception as e:
+        print(f"Search re-rank error: {e}")
+        return {"status": "error", "data": request.candidate_ids}
 
 
 if __name__ == "__main__":
