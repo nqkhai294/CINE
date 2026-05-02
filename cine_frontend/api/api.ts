@@ -185,6 +185,20 @@ export const getNewestMovies = async () => {
   }
 };
 
+/** Phim xu hướng: release_year gần đây + tmdb_vote_average cao (public). */
+export const getTrendingRatedMovies = async (): Promise<Movie[]> => {
+  try {
+    const res = await apiClient.get("/movies/trending-rated");
+    if (res.data?.result?.status === "ok" && Array.isArray(res.data.data)) {
+      return res.data.data;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching trending rated movies:", error);
+    return [];
+  }
+};
+
 /**
  * Get movie by ID
  */
@@ -680,16 +694,54 @@ export const getAllGenres = async () => {
   }
 };
 
-/** Get movies by genre ID
- */
+export type GenreMoviesPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
-export const getMoviesByGenre = async (genreId: string | number) => {
+export type GenreMoviesApiResult = {
+  success: boolean;
+  genre: { id: string; name: string };
+  movies: Movie[];
+  pagination: GenreMoviesPagination;
+  personalized?: boolean;
+};
+
+/** Danh sách phim theo thể loại (phân trang + optional keyword; có JWT + rating → rerank). */
+export const getMoviesByGenre = async (
+  genreId: string | number,
+  params?: { page?: number; limit?: number; keyword?: string },
+): Promise<GenreMoviesApiResult | null> => {
   try {
-    const res = await apiClient.get(`/genres/${genreId}/movies`);
-    return res.data;
+    const res = await apiClient.get(`/genres/${genreId}/movies`, {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        ...(params?.keyword?.trim()
+          ? { keyword: params.keyword.trim() }
+          : {}),
+      },
+    });
+    const d = res.data;
+    if (!d || !d.success) return null;
+    const p = d.pagination;
+    return {
+      success: true,
+      genre: d.genre,
+      movies: Array.isArray(d.movies) ? d.movies : [],
+      pagination: {
+        page: Number(p?.page) || 1,
+        limit: Number(p?.limit) || 20,
+        total: Number(p?.total) || 0,
+        totalPages: Number(p?.totalPages) || 0,
+      },
+      personalized: Boolean(d.personalized),
+    };
   } catch (error: any) {
     console.error("Error fetching movies by genre:", error.response?.data);
-    if (error.response && error.response.data) {
+    if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
     throw new Error("Network or server error occurred");

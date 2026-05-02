@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { getMoviesByGenre } from "@/api/api";
-import { Movie, Genre } from "@/types";
+import { Movie } from "@/types";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Image } from "@heroui/image";
 import { Input } from "@heroui/input";
+import { Pagination } from "@heroui/pagination";
 import { AnimatePresence } from "framer-motion";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 import { FiSearch, FiX } from "react-icons/fi";
+
+const PAGE_SIZE = 24;
 
 const MovieCard = ({ movie }: { movie: Movie }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -59,7 +62,6 @@ const MovieCard = ({ movie }: { movie: Movie }) => {
         )}
       </div>
 
-      {/* Hover Card */}
       <AnimatePresence>
         {isHovered && (
           <MovieHoverCard
@@ -81,43 +83,69 @@ export default function GenrePage() {
   const [genreName, setGenreName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchPersonalized, setSearchPersonalized] = useState(false);
+  const isFirstLoad = useRef(true);
 
-  // Filter movies based on search query
-  const filteredMovies = useMemo(() => {
-    if (!searchQuery.trim()) return movies;
+  useEffect(() => {
+    setPage(1);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    isFirstLoad.current = true;
+    setMovies([]);
+  }, [genreId]);
 
-    const query = searchQuery.toLowerCase().trim();
-    return movies.filter(
-      (movie) =>
-        movie.title.toLowerCase().includes(query) ||
-        (movie.original_title &&
-          movie.original_title.toLowerCase().includes(query))
-    );
-  }, [movies, searchQuery]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = searchQuery.trim();
+      setDebouncedSearch((prev) => {
+        if (prev !== next) {
+          setPage(1);
+        }
+        return next;
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
+      const first = isFirstLoad.current;
+      if (first) {
+        isFirstLoad.current = false;
+        setIsLoading(true);
+      }
       setError("");
 
       try {
-        // Fetch movies by genre
-        const moviesResponse = await getMoviesByGenre(genreId);
-        console.log("Movies by genre response:", moviesResponse);
-        if (moviesResponse.success && moviesResponse.movies) {
-          // Chỉ lấy 50 phim đầu tiên
-          setMovies(moviesResponse.movies.slice(0, 50));
-          // Set genre name từ response
-          if (moviesResponse.genre && moviesResponse.genre.name) {
-            setGenreName(moviesResponse.genre.name);
+        const res = await getMoviesByGenre(genreId, {
+          page,
+          limit: PAGE_SIZE,
+          keyword: debouncedSearch || undefined,
+        });
+        if (res) {
+          setMovies(res.movies);
+          setTotalPages(res.pagination.totalPages);
+          setTotalCount(res.pagination.total);
+          setSearchPersonalized(Boolean(res.personalized));
+          if (res.genre?.name) {
+            setGenreName(res.genre.name);
           }
         } else {
           setMovies([]);
+          setTotalPages(0);
+          setTotalCount(0);
+          setSearchPersonalized(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching genre data:", err);
-        setError(err.message || "Có lỗi xảy ra khi tải dữ liệu");
+        setError(
+          err instanceof Error ? err.message : "Có lỗi xảy ra khi tải dữ liệu",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -126,9 +154,9 @@ export default function GenrePage() {
     if (genreId) {
       fetchData();
     }
-  }, [genreId]);
+  }, [genreId, page, debouncedSearch]);
 
-  if (isLoading) {
+  if (isLoading && movies.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center pt-24">
         <Spinner size="lg" color="warning" />
@@ -150,29 +178,36 @@ export default function GenrePage() {
   return (
     <div className="min-h-screen bg-[#0a0e17] pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl md:text-4xl font-bold text-white">
                 {genreName || "Thể loại"}
               </h1>
-              {movies.length > 0 && (
+              {totalCount > 0 && (
                 <Chip
                   size="lg"
                   variant="flat"
                   color="warning"
                   className="text-white"
                 >
-                  {movies.length} phim
+                  {totalCount} phim
+                </Chip>
+              )}
+              {searchPersonalized && (
+                <Chip
+                  size="sm"
+                  variant="bordered"
+                  className="border-yellow-500/60 text-yellow-400"
+                >
+                  Theo gu bạn
                 </Chip>
               )}
             </div>
 
-            {/* Search Bar */}
             <div className="w-full sm:w-[300px]">
               <Input
-                aria-label="Tìm kiếm phim"
+                aria-label="Tìm kiếm phim trong thể loại"
                 classNames={{
                   inputWrapper:
                     "bg-[#1a2332] border-gray-700 hover:border-gray-600 focus-within:border-yellow-500 transition-all",
@@ -203,26 +238,53 @@ export default function GenrePage() {
 
           <p className="text-gray-400 text-sm">
             Khám phá những bộ phim thuộc thể loại {genreName}
-            {searchQuery && filteredMovies.length !== movies.length && (
+            {debouncedSearch && totalCount > 0 && (
               <span className="text-yellow-500 ml-2">
-                • Đang hiển thị {filteredMovies.length} / {movies.length} phim
+                • Trang {page} / {Math.max(totalPages, 1)} — {totalCount} kết quả
+                khớp &quot;{debouncedSearch}&quot;
+                {searchPersonalized &&
+                  ` (ưu tiên tối đa 500 phim đầu theo nội dung đã xem)`}
+              </span>
+            )}
+            {!debouncedSearch && totalCount > 0 && (
+              <span className="text-gray-500 ml-2">
+                • Trang {page} / {Math.max(totalPages, 1)}
+                {searchPersonalized &&
+                  ` — ưu tiên tối đa 500 phim đầu theo nội dung đã xem`}
               </span>
             )}
           </p>
         </div>
 
-        {/* Movies Grid */}
-        {filteredMovies.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredMovies.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} />
-            ))}
-          </div>
-        ) : searchQuery ? (
+        {movies.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {movies.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-10">
+                <Pagination
+                  total={totalPages}
+                  page={page}
+                  onChange={setPage}
+                  showControls
+                  color="warning"
+                  classNames={{
+                    wrapper: "gap-1",
+                    item: "bg-[#1a2332] text-white min-w-9 w-9 h-9",
+                    cursor: "bg-yellow-500 text-black font-semibold",
+                  }}
+                />
+              </div>
+            )}
+          </>
+        ) : debouncedSearch ? (
           <div className="text-center py-20">
             <FiSearch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg mb-2">
-              Không tìm thấy phim nào với từ khóa "{searchQuery}"
+              Không tìm thấy phim nào với từ khóa &quot;{debouncedSearch}&quot;
             </p>
             <button
               onClick={() => setSearchQuery("")}

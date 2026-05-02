@@ -321,6 +321,42 @@ module.exports.getTenNewestMovies = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/movies/trending-rated
+ * Phim xu hướng: năm phát hành gần đây + điểm TMDB cao (đủ số phiếu).
+ */
+module.exports.getTrendingGoodRatedMovies = async (req, res) => {
+  try {
+    const query = {
+      text: `SELECT m.*, COALESCE(ARRAY_AGG(DISTINCT g.name), '{}') AS genres
+             FROM movies m
+             LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+             LEFT JOIN genres g ON mg.genre_id = g.id
+             WHERE m.release_year IS NOT NULL
+               AND m.release_year >= EXTRACT(YEAR FROM CURRENT_DATE) - 5
+               AND m.tmdb_vote_average IS NOT NULL
+               AND m.tmdb_vote_average >= 7
+               AND COALESCE(m.tmdb_vote_count, 0) >= 50
+             GROUP BY m.id
+             ORDER BY m.tmdb_vote_average DESC NULLS LAST,
+                      m.release_year DESC NULLS LAST,
+                      m.release_date DESC NULLS LAST
+             LIMIT 10`,
+    };
+
+    const { rows } = await db.query(query);
+
+    res.status(200).json({
+      result: { message: "success", status: "ok" },
+      data: rows,
+      total: rows.length,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy phim xu hướng:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 module.exports.getGenresRecommendationsForUser = async (req, res) => {
   try {
     const genreId = req.params.id;

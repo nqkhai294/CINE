@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Chip } from "@heroui/chip";
 import { Movie } from "@/types";
 import { getSimilarMovies } from "@/api/api";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 
 interface SimilarMoviesSectionProps {
   movieId: string;

@@ -29,6 +29,11 @@ router.get("/highest-rate", movieController.getHighestTMDBMovies);
  */
 router.get("/newest", movieController.getTenNewestMovies);
 
+/**
+ * API: GET /api/movies/trending-rated — phim được chấm cao gần đây (public)
+ */
+router.get("/trending-rated", movieController.getTrendingGoodRatedMovies);
+
 router.get("/genre/:id", movieController.getGenresRecommendationsForUser);
 
 router.get("/progressing", protect, movieController.getMovieProgressingForUser);

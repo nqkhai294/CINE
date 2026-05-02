@@ -22,7 +22,7 @@ import {
   addToFavouritesList as addToFavouritesAction,
   removeFromFavouritesList as removeFromFavouritesAction,
 } from "@/store/slices/favouritesSlice";
-import { errorToast, successToast, warningToast } from "../ui/toast";
+import { errorToast, successToast, warningToast } from "@/components/ui/toast";
 import { FiHeart, FiPlus } from "react-icons/fi";
 
 interface MovieHoverCardProps {
@@ -45,7 +45,7 @@ export const MovieHoverCard = ({
 
   const { movieIds: watchlistIds } = useAppSelector((state) => state.watchlist);
   const { movieIds: favouritesIds } = useAppSelector(
-    (state) => state.favourites
+    (state) => state.favourites,
   );
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
@@ -114,7 +114,6 @@ export const MovieHoverCard = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Movie Poster */}
       <div className="relative h-[180px] w-full">
         <Image
           removeWrapper
@@ -125,15 +124,12 @@ export const MovieHoverCard = ({
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a2332] via-transparent to-transparent" />
       </div>
 
-      {/* Content */}
       <div className="p-4">
-        {/* Movie Title */}
         <h4 className="text-white font-bold text-lg mb-1 line-clamp-2">
           {movie.title}
         </h4>
         <p className="text-warning text-sm mb-3">{movie.original_title}</p>
 
-        {/* Action Buttons */}
         <div className="flex gap-2 mb-3">
           <Button
             size="sm"
@@ -178,7 +174,6 @@ export const MovieHoverCard = ({
           </Button>
         </div>
 
-        {/* Movie Info */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300 mb-3">
           <Chip
             size="sm"
@@ -209,7 +204,6 @@ export const MovieHoverCard = ({
           </span>
         </div>
 
-        {/* Genres */}
         {movie.genres && movie.genres.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {movie.genres.slice(0, 4).map((genre) => (

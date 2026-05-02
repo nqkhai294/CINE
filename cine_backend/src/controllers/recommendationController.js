@@ -5,32 +5,58 @@ const URL_ML = require("../environment/environment").URL_ML;
 
 const pendingRequests = new Map();
 
+/**
+ * Thể loại gợi ý: cộng điểm từ đánh giá (mạnh) và lượt xem (nhẹ).
+ * Không phụ thuộc view DB có thể chưa được tạo (ví dụ v_user_movie_scores).
+ */
 module.exports.getGenresRecommendationsForUser = async (req, res) => {
   try {
     const userId = req.user.id;
 
     const query = {
-      text: `SELECT 
-              g.name AS genre_name,
-              g.id AS genre_id,
-              SUM(v.heuristic_score) AS total_score
-            FROM v_user_movie_scores v
-            JOIN movie_genres mg ON v.movie_id = mg.movie_id
-            JOIN genres g ON mg.genre_id = g.id
-            WHERE v.user_id = $1  
-            GROUP BY g.id, g.name
-            ORDER BY total_score DESC
-            limit 6`,
+      text: `WITH genre_scores AS (
+          SELECT g.id AS gid,
+                 g.name AS gname,
+                 SUM(r.rating)::numeric AS s
+          FROM ratings r
+          INNER JOIN movie_genres mg ON r.movie_id = mg.movie_id
+          INNER JOIN genres g ON mg.genre_id = g.id
+          WHERE r.user_id = $1
+          GROUP BY g.id, g.name
+          UNION ALL
+          SELECT g.id,
+                 g.name,
+                 (COUNT(*)::numeric * 0.35) AS s
+          FROM views v
+          INNER JOIN movie_genres mg ON v.movie_id = mg.movie_id
+          INNER JOIN genres g ON mg.genre_id = g.id
+          WHERE v.user_id = $1
+          GROUP BY g.id, g.name
+        )
+        SELECT gid AS genre_id,
+               gname AS genre_name,
+               SUM(s)::float AS total_score
+        FROM genre_scores
+        GROUP BY gid, gname
+        ORDER BY total_score DESC
+        LIMIT 12`,
       values: [userId],
     };
     const { rows } = await db.query(query);
+
+    const data = rows.map((row) => ({
+      genre_id: String(row.genre_id),
+      genre_name: row.genre_name,
+      total_score:
+        row.total_score != null ? String(row.total_score) : "0",
+    }));
 
     res.status(200).json({
       result: {
         message: "success",
         status: "ok",
       },
-      data: rows,
+      data,
     });
   } catch (error) {
     console.error("Error in getGenresRecommendationsForUser:", error);

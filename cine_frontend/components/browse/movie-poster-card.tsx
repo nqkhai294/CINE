@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { Image } from "@heroui/image";
 import { AnimatePresence } from "framer-motion";
 import { Movie } from "@/types";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 
 export type MoviePosterCardProps = {
   movie: Movie;
-  /** Default: `/movie/${movie.id}` */
   href?: string;
   className?: string;
   imageClassName?: string;
@@ -82,4 +81,3 @@ export function MoviePosterCard({
     </div>
   );
 }
-

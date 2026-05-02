@@ -10,7 +10,7 @@ import { Image } from "@heroui/image";
 import { Input } from "@heroui/input";
 import { Pagination } from "@heroui/pagination";
 import { AnimatePresence } from "framer-motion";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 import { FiSearch, FiX, FiFilm } from "react-icons/fi";
 
 const PAGE_SIZE = 24;

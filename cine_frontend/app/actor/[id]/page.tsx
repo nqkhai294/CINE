@@ -10,7 +10,7 @@ import { Image } from "@heroui/image";
 import { Input } from "@heroui/input";
 import { Avatar } from "@heroui/avatar";
 import { AnimatePresence, motion } from "framer-motion";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 import { FiSearch, FiX, FiArrowLeft } from "react-icons/fi";
 import Link from "next/link";
 

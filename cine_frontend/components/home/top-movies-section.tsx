@@ -6,7 +6,7 @@ import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
 import { AnimatePresence } from "framer-motion";
 import { Movie } from "@/types";
-import { MovieHoverCard } from "@/components/home/movie-hover-card";
+import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 
 interface TopMoviesSectionProps {
   title: string;

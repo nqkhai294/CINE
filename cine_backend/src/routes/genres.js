@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { optionalProtect } = require("../middleware/authMiddleware");
 
 const genreController = require("../controllers/genreController");
 
@@ -13,6 +14,10 @@ router.get("/", genreController.getAllGenres);
  * API: GET /api/genres/:id/movies
  * Mô tả: Lấy danh sách phim theo thể loại
  */
-router.get("/:id/movies", genreController.getAllMoviesByGenre);
+router.get(
+  "/:id/movies",
+  optionalProtect,
+  genreController.getAllMoviesByGenre,
+);
 
 module.exports = router;
