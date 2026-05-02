@@ -12,4 +12,10 @@ router.get(
   recommendationController.getGenresRecommendationsForUser,
 );
 
+router.get(
+  "/for-you",
+  protect,
+  recommendationController.getForYouRecommendations,
+);
+
 module.exports = router;

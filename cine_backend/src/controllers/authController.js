@@ -132,15 +132,31 @@ module.exports.login = async (req, res) => {
       expiresIn: "2h",
     });
 
-    // Respond with token
+    const profileRes = await db.query(
+      `SELECT u.id, u.username, u.email, up.avatar_url, up.bio, up.date_of_birth, up.gender
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = $1`,
+      [user.id],
+    );
+    const row = profileRes.rows[0] || {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    };
+
     res.status(200).json({
       result: { status: "ok", message: "Login successful." },
       data: {
         token: token,
         user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
+          id: row.id,
+          username: row.username,
+          email: row.email,
+          avatar_url: row.avatar_url || null,
+          bio: row.bio ?? null,
+          date_of_birth: row.date_of_birth ?? null,
+          gender: row.gender ?? null,
         },
       },
     });

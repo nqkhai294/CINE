@@ -321,10 +321,6 @@ module.exports.getTenNewestMovies = async (req, res) => {
   }
 };
 
-/**
- * GET /api/movies/trending-rated
- * Phim xu hướng: năm phát hành gần đây + điểm TMDB cao (đủ số phiếu).
- */
 module.exports.getTrendingGoodRatedMovies = async (req, res) => {
   try {
     const query = {

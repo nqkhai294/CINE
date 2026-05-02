@@ -7,6 +7,7 @@ import { MovieHero } from "@/components/home/movie-hero";
 import { TopMoviesSection } from "@/components/home/top-movies-section";
 import { RecommendedGenresSection } from "@/components/home/recommended-genres-section";
 import { RecentlyWatchedSection } from "@/components/home/recently-watched-section";
+import { ForYouMoviesSection } from "@/components/home/for-you-movies-section";
 
 export default async function Home() {
   const [highestRatedMovies, trendingMovies, tenNewestMovies] =
@@ -19,6 +20,8 @@ export default async function Home() {
   return (
     <main className="relative">
       <MovieHero movies={highestRatedMovies} />
+
+      <ForYouMoviesSection />
 
       <RecentlyWatchedSection />
 

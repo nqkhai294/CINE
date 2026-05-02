@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -62,6 +62,7 @@ export const Navbar = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  const profileHydratedForId = useRef<number | string | null>(null);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -77,29 +78,50 @@ export const Navbar = () => {
   };
 
   useEffect(() => {
-    const getUser = async () => {
-      if (user) {
-        const response = await getCurrentUser(user.id);
-        if (response.data) {
-          const token = localStorage.getItem("token");
+    if (!isAuthenticated || !user?.id) {
+      profileHydratedForId.current = null;
+      return;
+    }
+    if (profileHydratedForId.current === user.id) return;
+    profileHydratedForId.current = user.id;
 
-          const updatedUser = {
-            ...user,
-            ...response.data,
-          };
+    const snapshot = { ...user };
+    let cancelled = false;
 
-          dispatch(
-            login({
-              user: updatedUser,
-              token: token || "",
-            })
-          );
-        }
+    (async () => {
+      try {
+        const response = await getCurrentUser(String(snapshot.id));
+        const profile = response?.data;
+        if (cancelled || !profile) return;
+
+        const token = localStorage.getItem("token");
+        dispatch(
+          login({
+            user: {
+              ...snapshot,
+              id: profile.id ?? snapshot.id,
+              username: profile.username ?? snapshot.username,
+              email: profile.email ?? snapshot.email,
+              avatar_url: profile.avatar_url ?? snapshot.avatar_url,
+              bio: profile.bio ?? snapshot.bio,
+              gender: profile.gender ?? snapshot.gender,
+              date_of_birth:
+                profile.date_of_birth ?? snapshot.date_of_birth,
+            },
+            token: token || "",
+          }),
+        );
+      } catch (e) {
+        console.error("Navbar hydrate profile:", e);
       }
-    };
+    })();
 
-    getUser();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+    // Chỉ theo dõi id: tránh lặp khi merge profile; snapshot user lấy tại lần id thay đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id, dispatch]);
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -265,7 +287,11 @@ export const Navbar = () => {
                   <Avatar
                     as="button"
                     className="transition-transform cursor-pointer hover:scale-110 ring-2 ring-offset-2 ring-white/30 hover:ring-yellow-500"
-                    src={user?.avatar_url || DefaultAvatar.src}
+                    src={
+                      user?.avatar_url?.trim()
+                        ? user.avatar_url.trim()
+                        : DefaultAvatar.src
+                    }
                     size="md"
                     isBordered
                     color="warning"

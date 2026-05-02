@@ -5,10 +5,17 @@ module.exports.getUserById = async (req, res) => {
     const { userId } = req.params; // Dùng params thay vì body cho GET
 
     const query = {
-      text: `SELECT up.*, u.username, u.email 
-             FROM user_profiles up
-             JOIN users u ON up.user_id = u.id
-             WHERE up.user_id = $1`,
+      text: `SELECT u.id,
+                    u.username,
+                    u.email,
+                    up.avatar_url,
+                    up.bio,
+                    up.date_of_birth,
+                    up.gender,
+                    up.updated_at AS profile_updated_at
+             FROM users u
+             LEFT JOIN user_profiles up ON u.id = up.user_id
+             WHERE u.id = $1`,
       values: [userId],
     };
 
@@ -18,12 +25,23 @@ module.exports.getUserById = async (req, res) => {
       return res.status(404).json({ message: "User profile not found" });
     }
 
+    const r = rows[0];
     res.status(200).json({
       result: {
         message: "success",
         status: "ok",
       },
-      data: rows[0],
+      data: {
+        id: r.id,
+        user_id: r.id,
+        username: r.username,
+        email: r.email,
+        avatar_url: r.avatar_url || null,
+        bio: r.bio ?? null,
+        date_of_birth: r.date_of_birth ?? null,
+        gender: r.gender ?? null,
+        profile_updated_at: r.profile_updated_at ?? null,
+      },
     });
   } catch (error) {
     console.error("Lỗi khi lấy thông tin user:", error);
@@ -120,9 +138,9 @@ module.exports.updateUserAvatar = async (req, res) => {
       values: [avatar_url, userId],
     };
 
-    const rows = await db.query(query);
+    const { rows } = await db.query(query);
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       return res.status(404).json({ message: "User profile not found" });
     }
 

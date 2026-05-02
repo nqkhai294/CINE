@@ -1,56 +1,115 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "@heroui/chip";
 import { Movie } from "@/types";
-import { getSimilarMovies } from "@/api/api";
+import { getForYouRecommendations, type ForYouMeta } from "@/api/api";
 import { MovieHoverCard } from "@/components/browse/movie-hover-card";
+import { useAppSelector } from "@/store/hooks";
 
 interface SimilarMoviesSectionProps {
-  movieId: string;
+  /** Dùng để loại phim đang xem khỏi danh sách. */
+  movieId?: string;
   title?: string;
   layout?: "horizontal" | "vertical";
+  className?: string;
+  /** Giới hạn số poster (vd sidebar watch). */
+  maxItems?: number;
+}
+
+function userRecSubtitle(meta: ForYouMeta | null): string | undefined {
+  if (!meta) return undefined;
+  if (meta.blend === "fallback_no_ratings") {
+    return "Phim xu hướng / mới — chấm phim để cá nhân hóa.";
+  }
+  if (meta.source === "content-based") {
+    return "Dựa trên phim bạn đã đánh giá.";
+  }
+  if (meta.source === "trending" || meta.source === "newest") {
+    return "Danh sách gợi ý chung cho bạn.";
+  }
+  return undefined;
 }
 
 const SimilarMoviesSection = ({
   movieId,
-  title = "Các phim tương tự",
+  title = "Phim gợi ý cho bạn",
   layout = "horizontal",
+  className = "",
+  maxItems,
 }: SimilarMoviesSectionProps) => {
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
-  const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const { isAuthenticated } = useAppSelector((s) => s.auth);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [meta, setMeta] = useState<ForYouMeta | null>(null);
+  const [loading, setLoading] = useState(false);
   const [hoveredMovie, setHoveredMovie] = useState<string | null>(null);
 
+  const subtitle = useMemo(() => userRecSubtitle(meta), [meta]);
+
+  const displayMovies = useMemo(() => {
+    if (maxItems != null && maxItems > 0) {
+      return movies.slice(0, maxItems);
+    }
+    return movies;
+  }, [movies, maxItems]);
+
   useEffect(() => {
-    const fetchSimilarMovies = async () => {
-      if (!movieId) return;
+    if (!isAuthenticated) {
+      setMovies([]);
+      setMeta(null);
+      return;
+    }
 
-      setLoadingSimilar(true);
-      try {
-        const movies = await getSimilarMovies(movieId);
-        setSimilarMovies(movies);
-      } catch (error) {
-        console.error("Error fetching similar movies:", error);
-      } finally {
-        setLoadingSimilar(false);
-      }
+    let cancelled = false;
+    setLoading(true);
+
+    getForYouRecommendations()
+      .then((res) => {
+        if (cancelled) return;
+        let list = res?.data ?? [];
+        if (movieId) {
+          list = list.filter((m) => String(m.id) !== String(movieId));
+        }
+        setMovies(list);
+        setMeta(res?.meta ?? null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
+  }, [isAuthenticated, movieId]);
 
-    fetchSimilarMovies();
-  }, [movieId]);
+  if (!isAuthenticated) {
+    return (
+      <div className={["py-6", className].filter(Boolean).join(" ")}>
+        <h3 className="text-xl font-bold text-white">{title}</h3>
+        <p className="text-sm text-gray-400 mt-2">
+          Đăng nhập để xem phim gợi ý theo gu và lịch sử của bạn.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="py-6">
-      <h3 className="text-xl font-bold text-white mb-6">{title}</h3>
+    <div className={["py-6", className].filter(Boolean).join(" ")}>
+      <h3 className="text-xl font-bold text-white">{title}</h3>
+      {subtitle ? (
+        <p className="text-sm text-gray-400 mt-1 mb-6">{subtitle}</p>
+      ) : (
+        <div className="mb-6" />
+      )}
 
-      {loadingSimilar ? (
+      {loading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
-          <p className="text-gray-400 mt-4">Đang tải phim đề xuất...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500" />
+          <p className="text-gray-400 mt-4">Đang tải gợi ý...</p>
         </div>
-      ) : similarMovies.length > 0 ? (
+      ) : displayMovies.length > 0 ? (
         <div
           className={
             layout === "vertical"
@@ -58,7 +117,7 @@ const SimilarMoviesSection = ({
               : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
           }
         >
-          {similarMovies.map((movie) => (
+          {displayMovies.map((movie) => (
             <div
               key={movie.id}
               className="relative"
@@ -107,9 +166,7 @@ const SimilarMoviesSection = ({
                       {movie.title}
                     </h4>
 
-                    {/* Chips Row */}
                     <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                      {/* IMDb Rating */}
                       <Chip
                         size="sm"
                         className="font-semibold text-xs rounded-md bg-black border-1 border-amber-400"
@@ -124,7 +181,6 @@ const SimilarMoviesSection = ({
                         </span>
                       </Chip>
 
-                      {/* T18 */}
                       <Chip
                         size="sm"
                         variant="bordered"
@@ -133,7 +189,6 @@ const SimilarMoviesSection = ({
                         T18
                       </Chip>
 
-                      {/* Year */}
                       <Chip
                         size="sm"
                         variant="bordered"
@@ -142,7 +197,6 @@ const SimilarMoviesSection = ({
                         {movie.release_year || "N/A"}
                       </Chip>
 
-                      {/* Runtime */}
                       {movie.runtime && (
                         <Chip
                           size="sm"
@@ -155,7 +209,6 @@ const SimilarMoviesSection = ({
                       )}
                     </div>
 
-                    {/* Genre Tags */}
                     {movie.genres && movie.genres.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {movie.genres.slice(0, 2).map((genre, idx) => (
@@ -172,7 +225,6 @@ const SimilarMoviesSection = ({
                 )}
               </Link>
 
-              {/* Hover Card - Only for horizontal layout */}
               {layout === "horizontal" && hoveredMovie === movie.id && (
                 <div
                   className="absolute top-0 left-0 w-full z-50"
@@ -191,7 +243,7 @@ const SimilarMoviesSection = ({
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-400">Không có phim đề xuất</p>
+          <p className="text-gray-400">Chưa có phim gợi ý</p>
         </div>
       )}
     </div>

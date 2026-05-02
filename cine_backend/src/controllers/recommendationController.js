@@ -5,6 +5,80 @@ const URL_ML = require("../environment/environment").URL_ML;
 
 const pendingRequests = new Map();
 
+const FOR_YOU_CB_TOP_N = 15;
+
+/** Giữ thứ tự id sau khi join DB (content-based / sau này blend CF). */
+async function hydrateMoviesByIdsOrdered(ids) {
+  if (!ids.length) return [];
+  const { rows } = await db.query(
+    `SELECT m.*, COALESCE(ARRAY_AGG(DISTINCT g.name), '{}') AS genres
+     FROM movies m
+     LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+     LEFT JOIN genres g ON mg.genre_id = g.id
+     WHERE m.id = ANY($1::int[])
+     GROUP BY m.id`,
+    [ids],
+  );
+  const map = new Map(rows.map((m) => [String(m.id), m]));
+  return ids.map((id) => map.get(String(id))).filter(Boolean);
+}
+
+async function fetchTrendingMovies(limit = 10) {
+  const { rows } = await db.query(
+    `SELECT m.*, COALESCE(ARRAY_AGG(DISTINCT g.name), '{}') AS genres
+     FROM movies m
+     LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+     LEFT JOIN genres g ON mg.genre_id = g.id
+     WHERE m.release_year IS NOT NULL
+       AND m.release_year >= EXTRACT(YEAR FROM CURRENT_DATE) - 5
+       AND m.tmdb_vote_average IS NOT NULL
+       AND m.tmdb_vote_average >= 7
+       AND COALESCE(m.tmdb_vote_count, 0) >= 50
+     GROUP BY m.id
+     ORDER BY m.tmdb_vote_average DESC NULLS LAST,
+              m.release_year DESC NULLS LAST,
+              m.release_date DESC NULLS LAST
+     LIMIT $1`,
+    [limit],
+  );
+  return rows;
+}
+
+async function fetchNewestMovies(limit = 10) {
+  const { rows } = await db.query(
+    `SELECT m.*, COALESCE(ARRAY_AGG(DISTINCT g.name), '{}') AS genres
+     FROM movies m
+     LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+     LEFT JOIN genres g ON mg.genre_id = g.id
+     GROUP BY m.id
+     ORDER BY m.release_date DESC NULLS LAST
+     LIMIT $1`,
+    [limit],
+  );
+  return rows;
+}
+
+/** Không có rating hoặc CB trả rỗng / lỗi ML: xu hướng → mới nhất. */
+async function fetchForYouFallback(limit = 10) {
+  let rows = await fetchTrendingMovies(limit);
+  let source = "trending";
+  if (!rows.length) {
+    rows = await fetchNewestMovies(limit);
+    source = "newest";
+  }
+  return { rows, source };
+}
+
+/**
+ * Tỷ lệ CB trong blend (khi đã có CF). Hiện chưa có CF → luôn dùng full CB.
+ * ratingCount > 20 → 40% CB + 60% CF; > 10 → 60% CB + 40% CF; else 100% CB.
+ */
+function getContentBasedShareForFutureBlend(ratingCount) {
+  if (ratingCount > 20) return 0.4;
+  if (ratingCount > 10) return 0.6;
+  return 1;
+}
+
 /**
  * Thể loại gợi ý: cộng điểm từ đánh giá (mạnh) và lượt xem (nhẹ).
  * Không phụ thuộc view DB có thể chưa được tạo (ví dụ v_user_movie_scores).
@@ -64,16 +138,15 @@ module.exports.getGenresRecommendationsForUser = async (req, res) => {
   }
 };
 
+/** Item–item từ ML (TF‑IDF). Trang phim dùng /for-you; endpoint này giữ cho API khác. */
 module.exports.getSimilarMovies = async (req, res) => {
   try {
     const { movieId } = req.params;
     const cacheKey = `similar_movies_${movieId}`;
 
-    // 1. Check Cache
     const cachedData = cache.get(cacheKey);
     if (cachedData) return res.status(200).json(cachedData);
 
-    // 2. Promise Locking
     if (pendingRequests.has(cacheKey)) {
       try {
         const data = await pendingRequests.get(cacheKey);
@@ -83,11 +156,9 @@ module.exports.getSimilarMovies = async (req, res) => {
       }
     }
 
-    // 3. Xử lý chính
     const fetchTask = (async () => {
       let recommendedIds = [];
 
-      // A. Gọi Python Service
       try {
         const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
         if (response.data && response.data.status === "ok") {
@@ -105,7 +176,6 @@ module.exports.getSimilarMovies = async (req, res) => {
         };
       }
 
-      // B. Truy vấn DB
       const dbResult = await db.query(
         `SELECT 
             m.*, 
@@ -121,7 +191,6 @@ module.exports.getSimilarMovies = async (req, res) => {
         [recommendedIds],
       );
 
-      // C. Sắp xếp kết quả
       const moviesMap = new Map(
         dbResult.rows.map((movie) => [String(movie.id), movie]),
       );
@@ -135,7 +204,6 @@ module.exports.getSimilarMovies = async (req, res) => {
         data: sortedMovies,
       };
 
-      // D. Lưu Cache
       cache.set(cacheKey, finalResult);
       return finalResult;
     })();
@@ -162,44 +230,123 @@ module.exports.getContentBasedRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const query = {
-      text: `select * from ratings where user_id = $1`,
-      values: [userId],
-    };
-    const { rows } = await db.query(query);
+    const { rows } = await db.query(
+      `SELECT movie_id, rating FROM ratings WHERE user_id = $1`,
+      [userId],
+    );
 
     const interactions = rows.map((r) => ({
       movie_id: Number(r.movie_id),
       rating: Number(r.rating),
     }));
 
-    const response = await axios.post(`${URL_ML}/recommend/content-based`, {
+    const mlRes = await axios.post(`${URL_ML}/recommend/content-based`, {
       user_id: userId,
-      top_n: 15,
-      interactions: interactions,
+      top_n: FOR_YOU_CB_TOP_N,
+      interactions,
     });
 
-    if (response.data && response.status === "ok") {
-      listId = response.data;
-
-      const query = {
-        text: `SELECT 
-                m.*,
-                COALESCE(ARRAY_AGG(g.name), '{}') AS genres
-                FROM movies m
-                LEFT JOIN movie_genres mg ON m.id = mg.movie_id
-                LEFT JOIN genres g ON mg.genre_id = g.id
-                WHERE m.id = ANY($1::int[])
-                GROUP BY m.id`,
-        values: [listId],
-      };
-      const { rows } = await db.query(query);
-      return res.status(200).json(rows);
-    } else {
+    if (mlRes.data?.status !== "ok" || !Array.isArray(mlRes.data.data)) {
       return res.status(500).json({ message: "Lỗi Python Service" });
     }
+
+    const listId = mlRes.data.data;
+    const movies = await hydrateMoviesByIdsOrdered(listId);
+
+    return res.status(200).json({
+      result: { status: "ok", message: "success" },
+      data: movies,
+    });
   } catch (error) {
     console.error("Lỗi CB:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+/**
+ * GET /api/recommendations/for-you (protect)
+ * 0 rating → xu hướng / mới nhất; có rating → CB (full; CF blend sau này).
+ */
+module.exports.getForYouRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { rows: countRows } = await db.query(
+      `SELECT COUNT(*)::int AS n FROM ratings WHERE user_id = $1`,
+      [userId],
+    );
+    const ratingCount = countRows[0].n;
+
+    if (ratingCount === 0) {
+      const { rows, source } = await fetchForYouFallback(10);
+      return res.status(200).json({
+        result: { status: "ok", message: "success" },
+        data: rows,
+        meta: {
+          source,
+          ratingCount,
+          blend: "fallback_no_ratings",
+          cbSharePlanned: getContentBasedShareForFutureBlend(0),
+        },
+      });
+    }
+
+    const { rows: rRows } = await db.query(
+      `SELECT movie_id, rating FROM ratings WHERE user_id = $1`,
+      [userId],
+    );
+    const interactions = rRows.map((r) => ({
+      movie_id: Number(r.movie_id),
+      rating: Number(r.rating),
+    }));
+
+    const cbSharePlanned = getContentBasedShareForFutureBlend(ratingCount);
+
+    let mlRes;
+    try {
+      mlRes = await axios.post(`${URL_ML}/recommend/content-based`, {
+        user_id: userId,
+        top_n: FOR_YOU_CB_TOP_N,
+        interactions,
+      });
+    } catch (err) {
+      console.error("for-you ML:", err.message);
+      mlRes = null;
+    }
+
+    const ids =
+      mlRes?.data?.status === "ok" && Array.isArray(mlRes.data.data)
+        ? mlRes.data.data
+        : [];
+
+    if (!ids.length) {
+      const { rows, source } = await fetchForYouFallback(10);
+      return res.status(200).json({
+        result: { status: "ok", message: "success" },
+        data: rows,
+        meta: {
+          source,
+          ratingCount,
+          blend: "cb_failed_or_empty_fallback",
+          cbSharePlanned,
+        },
+      });
+    }
+
+    const movies = await hydrateMoviesByIdsOrdered(ids);
+
+    return res.status(200).json({
+      result: { status: "ok", message: "success" },
+      data: movies,
+      meta: {
+        source: "content-based",
+        ratingCount,
+        blend: "cb_only_cf_pending",
+        cbSharePlanned,
+      },
+    });
+  } catch (error) {
+    console.error("getForYouRecommendations:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

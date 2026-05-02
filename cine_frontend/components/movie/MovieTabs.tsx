@@ -19,6 +19,7 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
         aria-label="Movie tabs"
         color="warning"
         variant="underlined"
+        defaultSelectedKey="recommended"
         classNames={{
           tabList:
             "gap-8 w-full relative rounded-none p-0 border-b border-gray-800",
@@ -28,6 +29,13 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
             "group-data-[selected=true]:text-yellow-500 text-gray-400 font-medium text-sm",
         }}
       >
+        <Tab key="recommended" title="Gợi ý cho bạn">
+          <SimilarMoviesSection
+            movieId={movieId}
+            title="Phim gợi ý cho bạn"
+          />
+        </Tab>
+
         <Tab key="cast" title="Diễn viên">
           <div className="py-6">
             {actors && actors.length > 0 ? (
@@ -38,7 +46,6 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                     href={`/actor/${actor.id}`}
                     className="flex flex-col items-center group cursor-pointer"
                   >
-                    {/* Circular Avatar */}
                     {actor.profile_url ? (
                       <div className="relative w-24 h-24 rounded-full overflow-hidden mb-3 ring-2 ring-gray-700 group-hover:ring-yellow-500 transition-all">
                         <Image
@@ -56,7 +63,6 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
                         </span>
                       </div>
                     )}
-                    {/* Actor Name */}
                     <p className="text-white font-medium text-sm text-center line-clamp-2 w-full group-hover:text-yellow-500 transition-colors">
                       {actor.name}
                     </p>
@@ -77,10 +83,6 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
               Thư viện ảnh đang được cập nhật...
             </p>
           </div>
-        </Tab>
-
-        <Tab key="recommended" title="Đề xuất">
-          <SimilarMoviesSection movieId={movieId} />
         </Tab>
       </Tabs>
     </div>

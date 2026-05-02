@@ -70,8 +70,10 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
   };
 
   useEffect(() => {
+    if (!movieId) return;
     handleGetComments();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movieId]);
 
   const handleGetComments = async () => {
     const res = await getCommentsForMovie(movieId);
@@ -151,12 +153,7 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                   description={`${comment.length} / 1000`}
                 />
 
-                <div className="flex items-center justify-between mt-4">
-                  <label className="flex items-center gap-2 text-gray-400 text-sm cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span>Tiết lộ?</span>
-                  </label>
-
+                <div className="flex justify-end mt-4">
                   <Button
                     color="warning"
                     className="font-semibold"
@@ -188,7 +185,14 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
                 {comments.map((cmt) => (
                   <div key={cmt.id} className="bg-[#1e2a3a] rounded-lg p-6">
                     <div className="flex gap-4">
-                      <Avatar src={cmt.user.avatar} size="md" />
+                      <Avatar
+                        src={
+                          cmt.user.avatar?.trim()
+                            ? cmt.user.avatar.trim()
+                            : DefaultAvatar.src
+                        }
+                        size="md"
+                      />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="font-semibold text-white">

@@ -14,7 +14,7 @@ function clamp01(n: number) {
 }
 
 export function RecentlyWatchedSection({
-  title = "Recently watched",
+  title = "Phim đã xem gần đây",
 }: {
   title?: string;
 }) {

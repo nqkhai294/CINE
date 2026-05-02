@@ -387,28 +387,29 @@ const WatchMoviePage = () => {
 
         {/* 4. MOVIE INFO & RATING */}
         <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left: Movie Info */}
-            <div className="flex-1 flex gap-6">
-              {/* Poster */}
-              <div className="w-32 md:w-48 flex-shrink-0">
-                <img
-                  src={movie.poster_url || ""}
-                  alt={movie.title}
-                  className="w-full rounded-lg shadow-2xl object-cover"
-                />
-              </div>
+          <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
+            {/* Left: thông tin phim + bình luận (lấp khoảng trống) */}
+            <div className="flex-1 flex flex-col gap-8 min-w-0">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Poster */}
+                <div className="w-32 md:w-48 flex-shrink-0 mx-auto sm:mx-0">
+                  <img
+                    src={movie.poster_url || ""}
+                    alt={movie.title}
+                    className="w-full rounded-lg shadow-2xl object-cover"
+                  />
+                </div>
 
-              {/* Details */}
-              <div className="flex-1">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  {movie.title}
-                </h2>
-                <p className="text-gray-400 mb-4">
-                  {movie.original_title || movie.title}
-                </p>
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                    {movie.title}
+                  </h2>
+                  <p className="text-gray-400 mb-4">
+                    {movie.original_title || movie.title}
+                  </p>
 
-                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-4">
                   <Chip
                     size="sm"
                     className="font-semibold text-xs rounded-md bg-black border-1 border-amber-400"
@@ -513,11 +514,15 @@ const WatchMoviePage = () => {
                   </Button>
                 </div>
               </div>
+              </div>
+
+              <div className="w-full border-t border-white/10 pt-6 mt-2">
+                <MovieComments movieId={movieId} />
+              </div>
             </div>
 
-            {/* Right: Rating Box */}
+            {/* Right: đánh giá → diễn viên → gợi ý (rút gọn) */}
             <div className="w-full lg:w-80 space-y-6">
-              {/* Rating Box */}
               <div className="bg-white/5 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-center flex-1 border-r border-white/10">
@@ -610,26 +615,16 @@ const WatchMoviePage = () => {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
 
-        {/* 5. COMMENTS & SIDEBAR */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left: Comments Section */}
-            <div className="flex-1">
-              <MovieComments movieId={movieId} />
-            </div>
-
-            {/* Right: Recommendations */}
-            <div className="w-full lg:w-80">
-              {/* Similar Movies Section */}
-              <SimilarMoviesSection
-                movieId={movieId}
-                title="Phim đề xuất"
-                layout="vertical"
-              />
+              <div className="bg-white/5 rounded-xl p-4">
+                <SimilarMoviesSection
+                  movieId={movieId}
+                  title="Phim gợi ý cho bạn"
+                  layout="vertical"
+                  maxItems={5}
+                  className="py-2"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -215,17 +215,16 @@ export const getMovieDetails = async (id: string | number) => {
   }
 };
 
+/** Gợi ý theo nội dung phim (ML content-based, anchor = phim hiện tại). */
 export const getSimilarMovies = async (id: string | number) => {
   try {
     const res = await apiClient.get(`/recommendations/similar/${id}`);
-
-    if (res.data && Array.isArray(res.data.data)) {
+    if (res.data?.result?.status === "ok" && Array.isArray(res.data.data)) {
       return res.data.data;
     }
-
     return [];
   } catch (error) {
-    console.error("Error fetching similar movies:", error);
+    console.error("Error fetching content-based movie recommendations:", error);
     return [];
   }
 };
@@ -270,6 +269,33 @@ export const getRecommendedGenres = async (): Promise<RecommendedGenre[]> => {
   } catch (error: any) {
     console.error("Error fetching recommended genres:", error.response?.data);
     return [];
+  }
+};
+
+/** GET /recommendations/for-you — cần đăng nhập. */
+export type ForYouMeta = {
+  source: string;
+  ratingCount: number;
+  blend?: string;
+  cbSharePlanned?: number;
+};
+
+export const getForYouRecommendations = async (): Promise<{
+  data: Movie[];
+  meta: ForYouMeta | null;
+} | null> => {
+  try {
+    const res = await apiClient.get("/recommendations/for-you");
+    if (res.data?.result?.status !== "ok") {
+      return null;
+    }
+    return {
+      data: Array.isArray(res.data.data) ? res.data.data : [],
+      meta: res.data.meta ?? null,
+    };
+  } catch (error: any) {
+    console.error("Error fetching for-you:", error.response?.data);
+    return null;
   }
 };
 

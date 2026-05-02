@@ -13,6 +13,7 @@ const VISIBLE_COUNT = 5;
 
 export type HorizontalMovieRowProps = {
   title: string;
+  subtitle?: string;
   movies: Movie[];
   loading?: boolean;
   error?: string | null;
@@ -30,6 +31,7 @@ export type HorizontalMovieRowProps = {
  */
 export function HorizontalMovieRow({
   title,
+  subtitle,
   movies,
   loading = false,
   error = null,
@@ -55,20 +57,25 @@ export function HorizontalMovieRow({
     <section
       className={[DEFAULT_SECTION_CLASS, className ?? ""].join(" ")}
     >
-      <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-          {title}
-        </h2>
-        {viewAllHref ? (
-          <Link
-            href={viewAllHref}
-            className="text-sm text-yellow-500 hover:text-yellow-400 font-semibold whitespace-nowrap"
-          >
-            {viewAllLabel}
-          </Link>
-        ) : (
-          <span className="w-px" aria-hidden />
-        )}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+            {title}
+          </h2>
+          {viewAllHref ? (
+            <Link
+              href={viewAllHref}
+              className="text-sm text-yellow-500 hover:text-yellow-400 font-semibold whitespace-nowrap"
+            >
+              {viewAllLabel}
+            </Link>
+          ) : (
+            <span className="w-px" aria-hidden />
+          )}
+        </div>
+        {subtitle ? (
+          <p className="text-sm text-gray-400 mt-2 max-w-3xl">{subtitle}</p>
+        ) : null}
       </div>
 
       {loading ? (
