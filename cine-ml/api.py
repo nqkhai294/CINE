@@ -24,6 +24,11 @@ class SearchRerankRequest(BaseModel):
     candidate_ids: list[int]
 
 
+class SimilarRerankRequest(BaseModel):
+    interactions: list[Interaction]
+    top_n: int = 30
+
+
 def build_user_profile(interactions_df, tfidf_matrix, indices):
     user_profile = np.zeros(tfidf_matrix.shape[1], dtype=float)
     for row in interactions_df:
@@ -33,7 +38,55 @@ def build_user_profile(interactions_df, tfidf_matrix, indices):
             item_index = indices[item_id]
             item_vector = tfidf_matrix[item_index].toarray().ravel()
             user_profile += rating * item_vector
+
+    norm = np.linalg.norm(user_profile)
+    if norm > 0:
+        user_profile = user_profile / norm
     return user_profile
+
+
+def get_similar_candidate_ids(movie_id: int, candidate_pool: int = 30):
+    if movie_id not in indices:
+        return []
+
+    idx = indices[movie_id]
+    similarities = cosine_similarity(tfidf_matrix[idx], tfidf_matrix).ravel()
+    ranked_indices = similarities.argsort()[::-1]
+
+    candidate_ids = []
+    for row_idx in ranked_indices:
+        mid = int(data.iloc[row_idx]["id"])
+        if mid == movie_id:
+            continue
+        candidate_ids.append(mid)
+        if len(candidate_ids) >= candidate_pool:
+            break
+    return candidate_ids
+
+
+def rerank_candidate_ids(interactions, candidate_ids):
+    if not candidate_ids:
+        return []
+
+    if not interactions:
+        return candidate_ids
+
+    user_profile = build_user_profile(interactions, tfidf_matrix, indices)
+    if np.all(user_profile == 0):
+        return candidate_ids
+
+    pairs = []
+    for pos, mid in enumerate(candidate_ids):
+        if mid not in indices:
+            pairs.append((float("-inf"), pos, mid))
+            continue
+        row_idx = indices[mid]
+        vec = tfidf_matrix[row_idx]
+        sim = float(cosine_similarity(user_profile.reshape(1, -1), vec)[0][0])
+        pairs.append((sim, pos, mid))
+
+    pairs.sort(key=lambda x: (-x[0], x[1]))
+    return [p[2] for p in pairs]
 
 
 print("Loading model...")
@@ -59,23 +112,28 @@ def get_recommendations(movie_id: int):
         raise HTTPException(status_code=500, detail="Model is not loaded")
 
     try:
-        if movie_id not in indices:
-            return {"status": "ok", "data": []}
-
-        idx = indices[movie_id]
-
-        sim_scores = list(
-            enumerate(cosine_similarity(tfidf_matrix[idx], tfidf_matrix).ravel())
-        )
-        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-        sim_scores = sim_scores[1:11]
-
-        movie_indices = [i[0] for i in sim_scores]
-        recommended_ids = data["id"].iloc[movie_indices].tolist()
-
+        recommended_ids = get_similar_candidate_ids(movie_id, candidate_pool=30)
         return {"status": "ok", "data": recommended_ids}
     except Exception as e:
         print(f"Recommendation error: {e}")
+        return {"status": "error", "data": []}
+
+
+@app.post("/recommend/{movie_id}/re-rank")
+def get_recommendations_reranked(movie_id: int, request: SimilarRerankRequest):
+    if tfidf_matrix is None:
+        raise HTTPException(status_code=500, detail="Model is not loaded")
+
+    try:
+        candidate_ids = get_similar_candidate_ids(movie_id, candidate_pool=30)
+        if not candidate_ids:
+            return {"status": "ok", "data": []}
+
+        reranked_ids = rerank_candidate_ids(request.interactions, candidate_ids)
+        top_n = max(1, min(request.top_n, 50))
+        return {"status": "ok", "data": reranked_ids[:top_n]}
+    except Exception as e:
+        print(f"Recommendation rerank error: {e}")
         return {"status": "error", "data": []}
 
 
@@ -124,31 +182,7 @@ def search_rerank(request: SearchRerankRequest):
         if not candidate_ids:
             return {"status": "ok", "data": []}
 
-        if not request.interactions:
-            return {"status": "ok", "data": candidate_ids}
-
-        user_profile = build_user_profile(
-            request.interactions, tfidf_matrix, indices
-        )
-        if np.all(user_profile == 0):
-            return {"status": "ok", "data": candidate_ids}
-
-        pairs = []
-        for pos, mid in enumerate(candidate_ids):
-            if mid not in indices:
-                pairs.append((float("-inf"), pos, mid))
-                continue
-            row_idx = indices[mid]
-            vec = tfidf_matrix[row_idx]
-            sim = float(
-                cosine_similarity(
-                    user_profile.reshape(1, -1), vec
-                )[0][0]
-            )
-            pairs.append((sim, pos, mid))
-
-        pairs.sort(key=lambda x: (-x[0], x[1]))
-        sorted_ids = [p[2] for p in pairs]
+        sorted_ids = rerank_candidate_ids(request.interactions, candidate_ids)
         return {"status": "ok", "data": sorted_ids}
     except Exception as e:
         print(f"Search re-rank error: {e}")

@@ -2,6 +2,7 @@ const db = require("../db");
 const axios = require("axios");
 const cache = require("../utils/cache");
 const URL_ML = require("../environment/environment").URL_ML;
+const { getUserRatingInteractions } = require("../utils/searchRerank");
 
 const pendingRequests = new Map();
 
@@ -121,8 +122,7 @@ module.exports.getGenresRecommendationsForUser = async (req, res) => {
     const data = rows.map((row) => ({
       genre_id: String(row.genre_id),
       genre_name: row.genre_name,
-      total_score:
-        row.total_score != null ? String(row.total_score) : "0",
+      total_score: row.total_score != null ? String(row.total_score) : "0",
     }));
 
     res.status(200).json({
@@ -138,11 +138,18 @@ module.exports.getGenresRecommendationsForUser = async (req, res) => {
   }
 };
 
-/** Item–item từ ML (TF‑IDF). Trang phim dùng /for-you; endpoint này giữ cho API khác. */
+/** Item–item từ ML (TF‑IDF). */
 module.exports.getSimilarMovies = async (req, res) => {
   try {
     const { movieId } = req.params;
-    const cacheKey = `similar_movies_${movieId}`;
+    const userId = req.user?.id;
+    const interactions = userId
+      ? await getUserRatingInteractions(userId)
+      : [];
+    const hasPersonalization = interactions.length > 0;
+    const cacheKey = hasPersonalization
+      ? `similar_movies_${movieId}_u_${userId}`
+      : `similar_movies_${movieId}`;
 
     const cachedData = cache.get(cacheKey);
     if (cachedData) return res.status(200).json(cachedData);
@@ -159,14 +166,34 @@ module.exports.getSimilarMovies = async (req, res) => {
     const fetchTask = (async () => {
       let recommendedIds = [];
 
-      try {
-        const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
-        if (response.data && response.data.status === "ok") {
-          recommendedIds = response.data.data;
+      if (hasPersonalization) {
+        try {
+          const response = await axios.post(
+            `${URL_ML}/recommend/${movieId}/re-rank`,
+            {
+              interactions,
+              top_n: 30,
+            },
+            { timeout: 15000 },
+          );
+          if (response.data?.status === "ok" && Array.isArray(response.data.data)) {
+            recommendedIds = response.data.data;
+          }
+        } catch (err) {
+          console.error("Lỗi Python Service similar re-rank:", err.message);
         }
-      } catch (err) {
-        console.error("Lỗi Python Service:", err.message);
-        return { result: { status: "ok" }, data: [] };
+      }
+
+      if (!recommendedIds.length) {
+        try {
+          const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
+          if (response.data && response.data.status === "ok") {
+            recommendedIds = response.data.data;
+          }
+        } catch (err) {
+          console.error("Lỗi Python Service:", err.message);
+          return { result: { status: "ok" }, data: [] };
+        }
       }
 
       if (!recommendedIds || recommendedIds.length === 0) {

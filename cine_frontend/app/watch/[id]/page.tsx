@@ -616,15 +616,29 @@ const WatchMoviePage = () => {
                 </div>
               )}
 
-              <div className="bg-white/5 rounded-xl p-4">
-                <SimilarMoviesSection
-                  movieId={movieId}
-                  title="Phim gợi ý cho bạn"
-                  layout="vertical"
-                  maxItems={5}
-                  className="py-2"
-                />
-              </div>
+            </div>
+          </div>
+
+          {/* Bottom recommendations: similar first, then for-you */}
+          <div className="mt-10 space-y-8">
+            <div className="bg-white/5 rounded-xl p-4">
+              <SimilarMoviesSection
+                movieId={movieId}
+                title="Các phim tương tự"
+                source="similar"
+                layout="horizontal"
+                className="py-2"
+              />
+            </div>
+
+            <div className="bg-white/5 rounded-xl p-4">
+              <SimilarMoviesSection
+                movieId={movieId}
+                title="Phim gợi ý cho bạn"
+                source="for-you"
+                layout="horizontal"
+                className="py-2"
+              />
             </div>
           </div>
         </div>

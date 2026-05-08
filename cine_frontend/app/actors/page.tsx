@@ -7,9 +7,12 @@ import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
 import { Avatar } from "@heroui/avatar";
+import { Pagination } from "@heroui/pagination";
 import { FiSearch, FiX, FiUsers } from "react-icons/fi";
 import Link from "next/link";
 import { motion } from "framer-motion";
+
+const PAGE_SIZE = 24;
 
 const ActorCard = ({ actor, index }: { actor: Actor; index: number }) => {
   return (
@@ -49,6 +52,7 @@ export default function ActorsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [page, setPage] = useState(1);
 
   // Filter actors based on search query
   const filteredActors = useMemo(() => {
@@ -56,9 +60,23 @@ export default function ActorsPage() {
 
     const query = searchQuery.toLowerCase().trim();
     return actors.filter((actor) =>
-      actor.name.toLowerCase().includes(query)
+      actor.name.toLowerCase().includes(query),
     );
   }, [actors, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredActors.length / PAGE_SIZE));
+  const paginatedActors = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredActors.slice(start, start + PAGE_SIZE);
+  }, [filteredActors, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   useEffect(() => {
     const fetchActors = async () => {
@@ -166,16 +184,44 @@ export default function ActorsPage() {
                 • Đang hiển thị {filteredActors.length} / {actors.length} diễn viên
               </span>
             )}
+            {filteredActors.length > 0 && (
+              <span className="text-gray-500 ml-2">
+                • Trang {page} / {totalPages}
+              </span>
+            )}
           </p>
         </div>
 
         {/* Actors Grid */}
         {filteredActors.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {filteredActors.map((actor, index) => (
-              <ActorCard key={actor.id} actor={actor} index={index} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              {paginatedActors.map((actor, index) => (
+                <ActorCard
+                  key={actor.id}
+                  actor={actor}
+                  index={(page - 1) * PAGE_SIZE + index}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-10">
+                <Pagination
+                  total={totalPages}
+                  page={page}
+                  onChange={setPage}
+                  showControls
+                  color="warning"
+                  classNames={{
+                    wrapper: "gap-1",
+                    item: "bg-[#1a2332] text-white min-w-9 w-9 h-9",
+                    cursor: "bg-yellow-500 text-black font-semibold",
+                  }}
+                />
+              </div>
+            )}
+          </>
         ) : searchQuery ? (
           <div className="text-center py-20">
             <FiSearch className="w-16 h-16 text-gray-600 mx-auto mb-4" />

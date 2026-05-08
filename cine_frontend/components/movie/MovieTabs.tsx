@@ -30,10 +30,18 @@ const MovieTabs = ({ movieId = "", actors }: MovieTabsProps) => {
         }}
       >
         <Tab key="recommended" title="Gợi ý cho bạn">
-          <SimilarMoviesSection
-            movieId={movieId}
-            title="Phim gợi ý cho bạn"
-          />
+          <div className="space-y-2">
+            <SimilarMoviesSection
+              movieId={movieId}
+              title="Các phim tương tự"
+              source="similar"
+            />
+            <SimilarMoviesSection
+              movieId={movieId}
+              title="Phim gợi ý cho bạn"
+              source="for-you"
+            />
+          </div>
         </Tab>
 
         <Tab key="cast" title="Diễn viên">

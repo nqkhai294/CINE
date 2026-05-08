@@ -109,11 +109,8 @@ module.exports.upsertWatchProgress = async (req, res) => {
     };
     const existingRow = existing.rows[0];
 
-    console.log("Existing watch progress:", existingRow);
-
     // Logic xử lý tăng view_count
     if (existingRow) {
-      console.log("Existing view count:", existingRow.view_count);
       const oldPercent = existingRow.progress_seconds / existingRow.duration;
 
       // Tăng view count nếu user đã xem qua 85% phim và lần xem mới < 15%

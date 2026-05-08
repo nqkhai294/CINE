@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "@heroui/chip";
 import { Movie } from "@/types";
-import { getForYouRecommendations, type ForYouMeta } from "@/api/api";
+import {
+  getForYouRecommendations,
+  getSimilarMovies,
+  type ForYouMeta,
+} from "@/api/api";
 import { MovieHoverCard } from "@/components/browse/movie-hover-card";
 import { useAppSelector } from "@/store/hooks";
 
@@ -17,6 +21,7 @@ interface SimilarMoviesSectionProps {
   className?: string;
   /** Giới hạn số poster (vd sidebar watch). */
   maxItems?: number;
+  source?: "for-you" | "similar";
 }
 
 function userRecSubtitle(meta: ForYouMeta | null): string | undefined {
@@ -39,6 +44,7 @@ const SimilarMoviesSection = ({
   layout = "horizontal",
   className = "",
   maxItems,
+  source = "for-you",
 }: SimilarMoviesSectionProps) => {
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -56,7 +62,7 @@ const SimilarMoviesSection = ({
   }, [movies, maxItems]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (source === "for-you" && !isAuthenticated) {
       setMovies([]);
       setMeta(null);
       return;
@@ -65,15 +71,27 @@ const SimilarMoviesSection = ({
     let cancelled = false;
     setLoading(true);
 
-    getForYouRecommendations()
+    const load =
+      source === "similar"
+        ? !movieId
+          ? Promise.resolve({ data: [], meta: null })
+          : getSimilarMovies(movieId)
+            .then((list) => ({ data: list, meta: null }))
+            .catch(() => ({ data: [], meta: null }))
+        : getForYouRecommendations().then((res) => ({
+            data: res?.data ?? [],
+            meta: res?.meta ?? null,
+          }));
+
+    load
       .then((res) => {
         if (cancelled) return;
-        let list = res?.data ?? [];
+        let list = res.data ?? [];
         if (movieId) {
-          list = list.filter((m) => String(m.id) !== String(movieId));
+          list = list.filter((m: Movie) => String(m.id) !== String(movieId));
         }
         setMovies(list);
-        setMeta(res?.meta ?? null);
+        setMeta(res.meta ?? null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -82,9 +100,9 @@ const SimilarMoviesSection = ({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, movieId]);
+  }, [isAuthenticated, movieId, source]);
 
-  if (!isAuthenticated) {
+  if (source === "for-you" && !isAuthenticated) {
     return (
       <div className={["py-6", className].filter(Boolean).join(" ")}>
         <h3 className="text-xl font-bold text-white">{title}</h3>
@@ -107,7 +125,11 @@ const SimilarMoviesSection = ({
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500" />
-          <p className="text-gray-400 mt-4">Đang tải gợi ý...</p>
+          <p className="text-gray-400 mt-4">
+            {source === "similar"
+              ? "Đang tải phim tương tự..."
+              : "Đang tải gợi ý..."}
+          </p>
         </div>
       ) : displayMovies.length > 0 ? (
         <div
@@ -243,7 +265,9 @@ const SimilarMoviesSection = ({
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-400">Chưa có phim gợi ý</p>
+          <p className="text-gray-400">
+            {source === "similar" ? "Chưa có phim tương tự" : "Chưa có phim gợi ý"}
+          </p>
         </div>
       )}
     </div>
