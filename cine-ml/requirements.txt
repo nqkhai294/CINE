@@ -16,3 +16,5 @@ seaborn>=0.12.0
 python-dotenv
 sqlalchemy
 psycopg2-binary
+fastapi
+uvicorn[standard]
