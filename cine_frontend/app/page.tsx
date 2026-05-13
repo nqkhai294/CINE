@@ -9,6 +9,8 @@ import { RecommendedGenresSection } from "@/components/home/recommended-genres-s
 import { RecentlyWatchedSection } from "@/components/home/recently-watched-section";
 import { ForYouMoviesSection } from "@/components/home/for-you-movies-section";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [highestRatedMovies, trendingMovies, tenNewestMovies] =
     await Promise.all([
@@ -19,7 +21,7 @@ export default async function Home() {
 
   return (
     <main className="relative">
-      <MovieHero movies={highestRatedMovies} />
+      {highestRatedMovies.length > 0 && <MovieHero movies={highestRatedMovies} />}
 
       <ForYouMoviesSection />
 

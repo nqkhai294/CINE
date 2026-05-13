@@ -1,0 +1,38 @@
+services:
+  ml:
+    build:
+      context: ./cine-ml
+      dockerfile: Dockerfile
+    container_name: cine-ml
+    restart: unless-stopped
+    env_file:
+      - ./cine-ml/.env.production
+    ports:
+      - "8000:8000"
+  backend:
+    build:
+      context: ./cine_backend
+      dockerfile: Dockerfile
+    container_name: cine-backend
+    restart: unless-stopped
+    env_file:
+      - ./cine_backend/.env.production
+    ports:
+      - "4200:4200"
+    depends_on:
+      ml:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./cine_frontend
+      dockerfile: Dockerfile
+    container_name: cine-frontend
+    restart: unless-stopped
+    env_file:
+      - ./cine_frontend/.env.production
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started

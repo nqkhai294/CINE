@@ -1,7 +1,12 @@
 import axios from "axios";
 import type { Movie } from "@/types";
 
-const API_URL = "http://localhost:4200/api";
+const API_URL =
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:4200/api"
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:4200/api";
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -110,9 +115,7 @@ export const getMovies = async (params?: {
       params: {
         page: params?.page,
         limit: params?.limit,
-        ...(params?.keyword?.trim()
-          ? { keyword: params.keyword.trim() }
-          : {}),
+        ...(params?.keyword?.trim() ? { keyword: params.keyword.trim() } : {}),
       },
     });
 
@@ -745,9 +748,7 @@ export const getMoviesByGenre = async (
       params: {
         page: params?.page,
         limit: params?.limit,
-        ...(params?.keyword?.trim()
-          ? { keyword: params.keyword.trim() }
-          : {}),
+        ...(params?.keyword?.trim() ? { keyword: params.keyword.trim() } : {}),
       },
     });
     const d = res.data;
