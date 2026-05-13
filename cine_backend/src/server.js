@@ -5,6 +5,9 @@ const db = require("./db");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 4200;
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((s) => s.trim())
+  : true;
 
 // Import routes
 const movieRoutes = require("./routes/movies");
@@ -22,7 +25,7 @@ const actorRoutes = require("./routes/actors");
 const directorRoutes = require("./routes/directors");
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: allowedOrigins,
   method: "GET,OPTIONS,PUT,PATCH,POST,DELETE",
   allowedHeaders: "Content-Type, Authorization",
 };
