@@ -1,6 +1,4 @@
-import { Movie } from "@/types";
-
-export const sampleMovies: Movie[] = [
+export const sampleMovies = [
   {
     adult: false,
     backdrop_path: "/hpXBJxLD2SEf8l2CspmSeiHrBKX.jpg",

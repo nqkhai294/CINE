@@ -76,9 +76,13 @@ const MovieComments = ({ movieId = "" }: MovieCommentsProps) => {
   }, [movieId]);
 
   const handleGetComments = async () => {
-    const res = await getCommentsForMovie(movieId);
-    console.log(res);
-    setComments(res.data);
+    try {
+      const res = await getCommentsForMovie(movieId);
+      setComments(Array.isArray(res?.data) ? res.data : []);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+      setComments([]);
+    }
   };
 
   const handleSubmit = async () => {
