@@ -23,4 +23,10 @@ router.get(
   recommendationController.getForYouRecommendations,
 );
 
+router.get(
+  "/similar-users-watch",
+  protect,
+  recommendationController.getSimilarUsersWatchRecommendations,
+);
+
 module.exports = router;

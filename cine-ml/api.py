@@ -4,8 +4,9 @@ import os
 import numpy as np
 from fastapi import FastAPI, HTTPException
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sklearn.metrics.pairwise import cosine_similarity
+from surprise import dump as surprise_dump
 
 app = FastAPI()
 
@@ -27,6 +28,13 @@ class SearchRerankRequest(BaseModel):
 class SimilarRerankRequest(BaseModel):
     interactions: list[Interaction]
     top_n: int = 30
+
+
+class CFUserRequest(BaseModel):
+    """Lọc cộng tác (SVD Surprise): chỉ cần user_id; limit = số phim trả về."""
+
+    user_id: int
+    limit: int = Field(default=15, ge=1, le=100)
 
 
 def build_user_profile(interactions_df, tfidf_matrix, indices):
@@ -105,6 +113,57 @@ except Exception as e:
     data = None
     indices = None
 
+cf_algo = None
+try:
+    cf_dump_path = os.path.join(
+        base_dir, "model", "collaborative-filtering", "cf_surprise.dump"
+    )
+    if os.path.isfile(cf_dump_path):
+        _, cf_algo = surprise_dump.load(cf_dump_path)
+        print("CF (SVD) loaded:", cf_dump_path)
+    else:
+        print("CF dump không có (tùy chọn):", cf_dump_path)
+except Exception as e:
+    cf_algo = None
+    print(f"CF load bỏ qua: {e}")
+
+
+def _cf_raw_user_id(trainset, user_id: int):
+    for candidate in (user_id, str(user_id)):
+        if trainset.knows_user(candidate):
+            return candidate
+    return None
+
+
+def _rated_movie_ids_from_trainset(trainset, raw_uid):
+    inner_uid = trainset.to_inner_uid(raw_uid)
+    return {
+        int(trainset.to_raw_iid(i_inner))
+        for i_inner, _ in trainset.ur[inner_uid]
+    }
+
+
+def cf_recommend_movie_ids(algo, user_id: int, limit: int):
+    """Trả về danh sách movie_id."""
+    trainset = algo.trainset
+    uid = _cf_raw_user_id(trainset, user_id)
+    if uid is None:
+        return [], "unknown_user"
+
+    rated = _rated_movie_ids_from_trainset(trainset, uid)
+    preds = []
+    for inner_iid in trainset.all_items():
+        raw_iid = trainset.to_raw_iid(inner_iid)
+        mid = int(raw_iid)
+        if mid in rated:
+            continue
+        est = algo.predict(uid, raw_iid).est
+        preds.append((mid, float(est)))
+
+    preds.sort(key=lambda x: -x[1])
+    k = max(1, min(limit, 100))
+    return [p[0] for p in preds[:k]], None
+
 
 @app.get("/recommend/{movie_id}")
 def get_recommendations(movie_id: int):
@@ -139,6 +198,9 @@ def get_recommendations_reranked(movie_id: int, request: SimilarRerankRequest):
 
 @app.post("/recommend/content-based")
 def get_content_based_recommendations(request: CBRequest):
+    """
+    Hàm gợi ý dựa trên model CB. 
+    """
     if tfidf_matrix is None:
         raise HTTPException(status_code=500, detail="Model is not loaded")
 
@@ -187,6 +249,25 @@ def search_rerank(request: SearchRerankRequest):
     except Exception as e:
         print(f"Search re-rank error: {e}")
         return {"status": "error", "data": request.candidate_ids}
+
+
+@app.post("/recommend/cf/user")
+def recommend_cf_for_user(request: CFUserRequest):
+    """
+    Hàm gợi ý dựa trên model CF. 
+    """
+    if cf_algo is None:
+        return {"status": "ok", "data": [], "meta": {"reason": "no_model"}}
+
+    try:
+        ids, reason = cf_recommend_movie_ids(
+            cf_algo, request.user_id, request.limit
+        )
+        meta = {"reason": reason} if reason else {}
+        return {"status": "ok", "data": ids, "meta": meta}
+    except Exception as e:
+        print(f"CF recommend error: {e}")
+        return {"status": "error", "data": [], "meta": {"reason": str(e)}}
 
 
 if __name__ == "__main__":

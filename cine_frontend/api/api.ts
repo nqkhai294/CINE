@@ -302,6 +302,25 @@ export const getForYouRecommendations = async (): Promise<{
   }
 };
 
+/** GET /recommendations/similar-users-watch — gợi ý CF (khối riêng). */
+export const getSimilarUsersWatchRecommendations = async (): Promise<
+  Movie[] | null
+> => {
+  try {
+    const res = await apiClient.get("/recommendations/similar-users-watch");
+    if (res.data?.result?.status !== "ok") {
+      return null;
+    }
+    return Array.isArray(res.data.data) ? res.data.data : [];
+  } catch (error: any) {
+    console.error(
+      "Error fetching similar-users-watch:",
+      error.response?.data,
+    );
+    return null;
+  }
+};
+
 export type SearchMoviesPagination = {
   page: number;
   limit: number;

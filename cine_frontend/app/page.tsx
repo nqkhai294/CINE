@@ -8,6 +8,7 @@ import { TopMoviesSection } from "@/components/home/top-movies-section";
 import { RecommendedGenresSection } from "@/components/home/recommended-genres-section";
 import { RecentlyWatchedSection } from "@/components/home/recently-watched-section";
 import { ForYouMoviesSection } from "@/components/home/for-you-movies-section";
+import { SimilarUsersWatchSection } from "@/components/home/similar-users-watch-section";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export default async function Home() {
       {highestRatedMovies.length > 0 && <MovieHero movies={highestRatedMovies} />}
 
       <ForYouMoviesSection />
+
+      <SimilarUsersWatchSection />
 
       <RecentlyWatchedSection />
 

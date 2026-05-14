@@ -7,6 +7,7 @@ const { getUserRatingInteractions } = require("../utils/searchRerank");
 const pendingRequests = new Map();
 
 const FOR_YOU_CB_TOP_N = 15;
+const SIMILAR_USERS_WATCH_CF_LIMIT = 15;
 
 /** Giữ thứ tự id sau khi join DB (content-based / sau này blend CF). */
 async function hydrateMoviesByIdsOrdered(ids) {
@@ -143,9 +144,7 @@ module.exports.getSimilarMovies = async (req, res) => {
   try {
     const { movieId } = req.params;
     const userId = req.user?.id;
-    const interactions = userId
-      ? await getUserRatingInteractions(userId)
-      : [];
+    const interactions = userId ? await getUserRatingInteractions(userId) : [];
     const hasPersonalization = interactions.length > 0;
     const cacheKey = hasPersonalization
       ? `similar_movies_${movieId}_u_${userId}`
@@ -176,7 +175,10 @@ module.exports.getSimilarMovies = async (req, res) => {
             },
             { timeout: 15000 },
           );
-          if (response.data?.status === "ok" && Array.isArray(response.data.data)) {
+          if (
+            response.data?.status === "ok" &&
+            Array.isArray(response.data.data)
+          ) {
             recommendedIds = response.data.data;
           }
         } catch (err) {
@@ -374,6 +376,61 @@ module.exports.getForYouRecommendations = async (req, res) => {
     });
   } catch (error) {
     console.error("getForYouRecommendations:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+/**
+ * GET /api/recommendations/similar-users-watch (protect)
+ * Khối gợi ý CF riêng — tách biệt CB / for-you.
+ */
+module.exports.getSimilarUsersWatchRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = Math.min(
+      30,
+      Math.max(
+        1,
+        parseInt(String(req.query.limit || ""), 10) ||
+          SIMILAR_USERS_WATCH_CF_LIMIT,
+      ),
+    );
+
+    let mlRes;
+    try {
+      mlRes = await axios.post(
+        `${URL_ML}/recommend/cf/user`,
+        { user_id: userId, limit },
+        { timeout: 25000 },
+      );
+    } catch (err) {
+      console.error("similar-users-watch ML:", err.message);
+      return res.status(200).json({
+        result: { status: "ok", message: "success" },
+        data: [],
+      });
+    }
+
+    const ids =
+      mlRes?.data?.status === "ok" && Array.isArray(mlRes.data.data)
+        ? mlRes.data.data.map((x) => Number(x)).filter(Number.isFinite)
+        : [];
+
+    if (!ids.length) {
+      return res.status(200).json({
+        result: { status: "ok", message: "success" },
+        data: [],
+      });
+    }
+
+    const movies = await hydrateMoviesByIdsOrdered(ids);
+
+    return res.status(200).json({
+      result: { status: "ok", message: "success" },
+      data: movies,
+    });
+  } catch (error) {
+    console.error("getSimilarUsersWatchRecommendations:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
