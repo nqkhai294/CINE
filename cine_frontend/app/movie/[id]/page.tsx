@@ -7,6 +7,7 @@ import MovieComments from "@/components/movie/MovieComments";
 import MovieInfo from "@/components/movie/MovieInfo";
 import MovieTabs from "@/components/movie/MovieTabs";
 import { errorToast } from "@/components/ui/toast";
+import { Spinner } from "@heroui/spinner";
 import { setCurrentMovie } from "@/store/slices/movieSlice";
 import { Movie } from "@/types";
 import { useParams } from "next/navigation";
@@ -49,7 +50,16 @@ const DetailMoviePage = () => {
   if (loading) {
     return (
       <PageWrapper>
-        <div>Loading...</div>
+        <div className="flex min-h-[55vh] w-full items-center justify-center px-4">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-col items-center gap-5 rounded-2xl border border-white/10 bg-[#151b26]/95 px-10 py-12 shadow-2xl backdrop-blur-sm"
+          >
+            <Spinner size="lg" color="warning" />
+            <p className="text-sm text-gray-400">Đang tải thông tin phim…</p>
+          </div>
+        </div>
       </PageWrapper>
     );
   }
