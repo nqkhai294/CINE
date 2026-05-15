@@ -7,7 +7,6 @@ import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { FcGoogle } from "react-icons/fc";
 import { addToast, useToast } from "@heroui/toast";
-import Turnstile from "react-turnstile";
 import { loginUser, registerUser } from "@/api/api";
 import { errorToast, successToast } from "../ui/toast";
 
@@ -21,8 +20,6 @@ interface LoginModalProps {
 
 export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   const [isRegister, setIsRegister] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
-  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const dispatch = useAppDispatch();
 
@@ -36,12 +33,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Reset turnstile widget
-  const resetTurnstile = () => {
-    setTurnstileToken("");
-    setTurnstileKey((prev) => prev + 1);
-  };
-
   // Clear form data when modal closes
   const handleClose = () => {
     resetFrom();
@@ -53,7 +44,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
     setPassword("");
     setEmail("");
     setDisplayName("");
-    resetTurnstile();
   };
 
   const handleSubmit = async () => {
@@ -72,34 +62,23 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         return;
       }
 
-      if (!turnstileToken) {
-        errorToast("Error", "Vui lòng xác thực Turnstile");
-        return;
-      }
-
       const res = await registerUser(
         email,
         username,
         password,
-        displayName,
-        turnstileToken
+        displayName
       );
 
       if (res && res.result.status === "ok") {
         successToast("Success", "Đăng ký thành công!");
         setIsRegister(false);
-        // Clear form
         resetFrom();
       } else {
         errorToast("Error", res?.message || "Đăng ký thất bại!");
-        // Reset turnstile on error
-        resetTurnstile();
       }
     } catch (error: any) {
       console.error("Error during registration:", error);
       errorToast("Error", error.message || "Đăng ký thất bại!");
-      // Reset turnstile on error
-      resetTurnstile();
     } finally {
       setIsLoading(false);
     }
@@ -113,12 +92,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         return;
       }
 
-      if (!turnstileToken) {
-        errorToast("Error", "Vui lòng xác thực Turnstile");
-        return;
-      }
-
-      const res = await loginUser(username, password, turnstileToken);
+      const res = await loginUser(username, password);
 
       if (res && res.result.status == "ok") {
         dispatch(
@@ -132,14 +106,10 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         handleClose();
       } else {
         errorToast("Error", res?.message || "Đăng nhập thất bại!");
-        // Reset turnstile on error
-        resetTurnstile();
       }
     } catch (error: any) {
       console.error("Error during login:", error);
       errorToast("Error", error.message || "Đăng nhập thất bại!");
-      // Reset turnstile on error
-      resetTurnstile();
     } finally {
       setIsLoading(false);
     }
@@ -290,33 +260,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                 />
               </>
             )}
-
-            {/* Cloudflare Turnstile */}
-            <div className="flex justify-center">
-              <Turnstile
-                key={turnstileKey}
-                sitekey={
-                  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-                  "1x00000000000000000000AA"
-                }
-                onVerify={(token: string) => setTurnstileToken(token)}
-                onExpire={() => {
-                  setTurnstileToken("");
-                  errorToast(
-                    "Error",
-                    "Xác thực Turnstile đã hết hạn, vui lòng thử lại"
-                  );
-                }}
-                onError={() => {
-                  setTurnstileToken("");
-                  errorToast(
-                    "Error",
-                    "Lỗi xác thực Turnstile, vui lòng thử lại"
-                  );
-                }}
-                theme="dark"
-              />
-            </div>
 
             {/* Action Button */}
             <Button

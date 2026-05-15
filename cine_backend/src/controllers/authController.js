@@ -1,27 +1,10 @@
 const db = require("../db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const verifyTurnstile = require("../utils/verifyTurnstile");
-
 // Register a new user
 module.exports.register = async (req, res) => {
   try {
-    const { email, username, password, display_name, turnstileToken } =
-      req.body;
-
-    if (!turnstileToken) {
-      return res.status(400).json({
-        status: "error",
-        message: "Yêu cầu xác thực CAPTCHA.",
-      });
-    }
-    const isHuman = await verifyTurnstile(turnstileToken);
-    if (!isHuman) {
-      return res.status(403).json({
-        status: "error",
-        message: "Xác thực CAPTCHA thất bại. Vui lòng thử lại.",
-      });
-    }
+    const { email, username, password, display_name } = req.body;
 
     // Check body requirements
     if (!email || !username || !password) {
@@ -77,21 +60,7 @@ module.exports.register = async (req, res) => {
 // Login a user
 module.exports.login = async (req, res) => {
   try {
-    const { username, password, turnstileToken } = req.body;
-
-    if (!turnstileToken) {
-      return res.status(400).json({
-        status: "error",
-        message: "Yêu cầu xác thực CAPTCHA.",
-      });
-    }
-    const isHuman = await verifyTurnstile(turnstileToken);
-    if (!isHuman) {
-      return res.status(403).json({
-        status: "error",
-        message: "Xác thực CAPTCHA thất bại. Vui lòng thử lại.",
-      });
-    }
+    const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({

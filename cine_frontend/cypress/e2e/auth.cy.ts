@@ -1,25 +1,7 @@
 describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
-  const visitHomeWithMockTurnstile = () => {
+  const visitHome = () => {
     cy.viewport(1280, 720);
-    cy.visit("/", {
-      onBeforeLoad(win) {
-        (win as any).turnstile = {
-          render: (
-            _container: unknown,
-            options: { callback?: (token: string) => void },
-          ) => {
-            if (options?.callback) {
-              options.callback("e2e-turnstile-token");
-            }
-
-            return "mock-turnstile-widget";
-          },
-          reset: () => {},
-          remove: () => {},
-          getResponse: () => "e2e-turnstile-token",
-        };
-      },
-    });
+    cy.visit("/");
   };
 
   const openAuthModal = () => {
@@ -45,7 +27,7 @@ describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
       },
     }).as("registerRequest");
 
-    visitHomeWithMockTurnstile();
+    visitHome();
     openAuthModal();
 
     cy.contains("a", "đăng ký ngay", { matchCase: false }).click();
@@ -66,7 +48,7 @@ describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
         expect(body.username).to.eq(username);
         expect(body.displayName).to.eq(displayName);
         expect(body.password).to.eq(password);
-        expect(body.turnstileToken).to.eq("e2e-turnstile-token");
+        expect(body).to.not.have.property("turnstileToken");
       });
 
     cy.contains("Đăng ký thành công!").should("be.visible");
@@ -93,7 +75,7 @@ describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
       },
     }).as("loginRequest");
 
-    visitHomeWithMockTurnstile();
+    visitHome();
     openAuthModal();
 
     cy.get('[role="dialog"]').within(() => {
@@ -107,7 +89,7 @@ describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
       .should((body) => {
         expect(body.username).to.eq(username);
         expect(body.password).to.eq(password);
-        expect(body.turnstileToken).to.eq("e2e-turnstile-token");
+        expect(body).to.not.have.property("turnstileToken");
       });
 
     cy.contains("Đăng nhập thành công!").should("be.visible");
@@ -129,7 +111,7 @@ describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
       },
     }).as("loginFailedRequest");
 
-    visitHomeWithMockTurnstile();
+    visitHome();
     openAuthModal();
 
     cy.get('[role="dialog"]').within(() => {

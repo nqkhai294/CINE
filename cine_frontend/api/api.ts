@@ -396,16 +396,11 @@ export const searchMovies = async (
  * Login user
  */
 
-export const loginUser = async (
-  username: string,
-  password: string,
-  turnstileToken: string,
-) => {
+export const loginUser = async (username: string, password: string) => {
   try {
     const res = await apiClient.post("/auth/login", {
       username,
       password,
-      turnstileToken,
     });
 
     if (res.data && res.data.result.status) {
@@ -429,7 +424,6 @@ export const registerUser = async (
   username: string,
   password: string,
   displayName: string,
-  turnstileToken: string,
 ) => {
   try {
     const res = await apiClient.post("/auth/register", {
@@ -437,7 +431,6 @@ export const registerUser = async (
       username,
       password,
       displayName,
-      turnstileToken,
     });
 
     return res.data;
