@@ -6,8 +6,9 @@ import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { Toast, ToastProvider } from "@heroui/toast";
+import { ToastProvider } from "@heroui/toast";
 import { Provider } from "react-redux";
+
 import { store } from "@/store/store";
 import { AuthLoader } from "@/components/auth/auth-loader";
 
