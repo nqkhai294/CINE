@@ -9,29 +9,14 @@ module.exports.logView = async (req, res) => {
       return res.status(400).json({ message: "Miss movie ID !" });
     }
 
-    // Check if record exists
-    const checkQuery = {
-      text: `SELECT id FROM views WHERE user_id = $1 AND movie_id = $2`,
+    const upsertQuery = {
+      text: `INSERT INTO views (user_id, movie_id)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id, movie_id)
+        DO UPDATE SET viewed_at = NOW()`,
       values: [userId, movieId],
     };
-
-    const existingRecord = await db.query(checkQuery);
-
-    if (existingRecord.rows.length > 0) {
-      // Update existing record
-      const updateQuery = {
-        text: `UPDATE views SET viewed_at = NOW() WHERE user_id = $1 AND movie_id = $2`,
-        values: [userId, movieId],
-      };
-      await db.query(updateQuery);
-    } else {
-      // Insert new record
-      const insertQuery = {
-        text: `INSERT INTO views (user_id, movie_id) VALUES ($1, $2)`,
-        values: [userId, movieId],
-      };
-      await db.query(insertQuery);
-    }
+    await db.query(upsertQuery);
 
     return res.status(201).json({
       result: {
@@ -50,13 +35,17 @@ module.exports.getUserViews = async (req, res) => {
     const userId = req.user.id; // Get from middleware 'protect'
 
     const query = {
-      text: `SELECT 
-         v.viewed_at, 
-         m.id, m.title, m.poster_url, m.release_year, m.tmdb_vote_average
-         from views v
-         join movies m on v.movie_id = m.id
-         where v.user_id = $1
-         order by v.viewed_at desc`,
+      text: `SELECT viewed_at, id, title, poster_url, release_year, tmdb_vote_average
+         FROM (
+           SELECT DISTINCT ON (m.id)
+             v.viewed_at,
+             m.id, m.title, m.poster_url, m.release_year, m.tmdb_vote_average
+           FROM views v
+           JOIN movies m ON v.movie_id = m.id
+           WHERE v.user_id = $1
+           ORDER BY m.id, v.viewed_at DESC
+         ) AS unique_views
+         ORDER BY viewed_at DESC`,
       values: [userId],
     };
     const result = await db.query(query);

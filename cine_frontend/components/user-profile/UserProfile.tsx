@@ -90,6 +90,16 @@ const UserProfile = () => {
   }, [user]);
 
   // Mock data - sẽ thay bằng API call thực tế
+  const dedupeMoviesById = (movies: Movie[]) => {
+    const seen = new Set<string>();
+    return movies.filter((movie) => {
+      const id = String(movie.id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  };
+
   const [recentMovies, setRecentMovies] = useState<Movie[]>([]);
   const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
   const [watchlistMovies, setWatchlistMovies] = useState<Movie[]>([]);
@@ -190,8 +200,7 @@ const UserProfile = () => {
     const fetchListHistoryMovies = async () => {
       try {
         const res = await getHistoryWatch();
-        console.log("History movies:", res.result.views);
-        setRecentMovies(res.result.views);
+        setRecentMovies(dedupeMoviesById(res.result.views ?? []));
       } catch (error) {
         console.error("Error fetching history movies:", error);
       }
