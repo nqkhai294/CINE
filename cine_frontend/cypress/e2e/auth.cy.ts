@@ -1,5 +1,6 @@
 describe("Kiểm thử tính năng đăng ký và đăng nhập", () => {
   const visitHome = () => {
+    cy.clearLocalStorage();
     cy.viewport(1280, 720);
     cy.visit("/");
   };

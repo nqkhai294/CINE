@@ -5,7 +5,6 @@ import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
-import { FcGoogle } from "react-icons/fc";
 import { addToast, useToast } from "@heroui/toast";
 import { loginUser, registerUser } from "@/api/api";
 import { errorToast, successToast } from "../ui/toast";
@@ -62,12 +61,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         return;
       }
 
-      const res = await registerUser(
-        email,
-        username,
-        password,
-        displayName
-      );
+      const res = await registerUser(email, username, password, displayName);
 
       if (res && res.result.status === "ok") {
         successToast("Success", "Đăng ký thành công!");
@@ -99,7 +93,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
           login({
             user: res.data.user,
             token: res.data.token,
-          })
+          }),
         );
         successToast("Success", "Đăng nhập thành công!");
 
@@ -281,15 +275,6 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                 </Link>
               </div>
             )}
-
-            {/* Google Login */}
-            <Button
-              variant="bordered"
-              className="w-full border-gray-600 text-white hover:bg-white/5"
-              startContent={<FcGoogle className="text-xl" />}
-            >
-              {isRegister ? "Đăng ký" : "Đăng nhập"} với Goolge
-            </Button>
           </div>
         </ModalBody>
       </ModalContent>
