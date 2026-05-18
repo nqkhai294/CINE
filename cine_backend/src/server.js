@@ -30,9 +30,21 @@ const corsOptions = {
   allowedHeaders: "Content-Type, Authorization",
 };
 
+// API JSON không dùng ETag — tránh 304 Not Modified (kết quả search/personalized bị "đóng băng")
+app.set("etag", false);
+
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
+app.use("/api", (_req, res, next) => {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+  next();
+});
 
 app.use("/api/movies", movieRoutes);
 app.use("/api/auth", authRoutes);

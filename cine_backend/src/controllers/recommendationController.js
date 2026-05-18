@@ -1,10 +1,7 @@
 const db = require("../db");
 const axios = require("axios");
-const cache = require("../utils/cache");
 const URL_ML = require("../environment/environment").URL_ML;
 const { getUserRatingInteractions } = require("../utils/searchRerank");
-
-const pendingRequests = new Map();
 
 const FOR_YOU_CB_TOP_N = 15;
 const SIMILAR_USERS_WATCH_CF_LIMIT = 15;
@@ -146,111 +143,78 @@ module.exports.getSimilarMovies = async (req, res) => {
     const userId = req.user?.id;
     const interactions = userId ? await getUserRatingInteractions(userId) : [];
     const hasPersonalization = interactions.length > 0;
-    const cacheKey = hasPersonalization
-      ? `similar_movies_${movieId}_u_${userId}`
-      : `similar_movies_${movieId}`;
 
-    const cachedData = cache.get(cacheKey);
-    if (cachedData) return res.status(200).json(cachedData);
+    let recommendedIds = [];
 
-    if (pendingRequests.has(cacheKey)) {
+    if (hasPersonalization) {
       try {
-        const data = await pendingRequests.get(cacheKey);
-        return res.status(200).json(data);
-      } catch (error) {
-        return res.status(500).json({ message: "Lỗi đồng bộ" });
+        const response = await axios.post(
+          `${URL_ML}/recommend/${movieId}/re-rank`,
+          {
+            interactions,
+            top_n: 30,
+          },
+          { timeout: 15000 },
+        );
+        if (
+          response.data?.status === "ok" &&
+          Array.isArray(response.data.data)
+        ) {
+          recommendedIds = response.data.data;
+        }
+      } catch (err) {
+        console.error("Lỗi Python Service similar re-rank:", err.message);
       }
     }
 
-    const fetchTask = (async () => {
-      let recommendedIds = [];
-
-      if (hasPersonalization) {
-        try {
-          const response = await axios.post(
-            `${URL_ML}/recommend/${movieId}/re-rank`,
-            {
-              interactions,
-              top_n: 30,
-            },
-            { timeout: 15000 },
-          );
-          if (
-            response.data?.status === "ok" &&
-            Array.isArray(response.data.data)
-          ) {
-            recommendedIds = response.data.data;
-          }
-        } catch (err) {
-          console.error("Lỗi Python Service similar re-rank:", err.message);
+    if (!recommendedIds.length) {
+      try {
+        const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
+        if (response.data && response.data.status === "ok") {
+          recommendedIds = response.data.data;
         }
+      } catch (err) {
+        console.error("Lỗi Python Service:", err.message);
+        return res.status(200).json({ result: { status: "ok" }, data: [] });
       }
-
-      if (!recommendedIds.length) {
-        try {
-          const response = await axios.get(`${URL_ML}/recommend/${movieId}`);
-          if (response.data && response.data.status === "ok") {
-            recommendedIds = response.data.data;
-          }
-        } catch (err) {
-          console.error("Lỗi Python Service:", err.message);
-          return { result: { status: "ok" }, data: [] };
-        }
-      }
-
-      if (!recommendedIds || recommendedIds.length === 0) {
-        return {
-          result: { status: "ok", message: "Không tìm thấy phim tương tự" },
-          data: [],
-        };
-      }
-
-      const dbResult = await db.query(
-        `SELECT 
-            m.*, 
-            m.popularity::FLOAT, 
-            m.tmdb_vote_average::FLOAT, 
-            m.avg_rating::FLOAT, 
-            COALESCE(ARRAY_AGG(g.name), '{}') AS genres
-         FROM Movies m
-         LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
-         LEFT JOIN Genres g ON mg.genre_id = g.id
-         WHERE m.id = ANY($1::int[])
-         GROUP BY m.id`,
-        [recommendedIds],
-      );
-
-      const moviesMap = new Map(
-        dbResult.rows.map((movie) => [String(movie.id), movie]),
-      );
-
-      const sortedMovies = recommendedIds
-        .map((id) => moviesMap.get(String(id)))
-        .filter((movie) => movie !== undefined);
-
-      const finalResult = {
-        result: { status: "ok", message: "Tải phim tương tự thành công" },
-        data: sortedMovies,
-      };
-
-      cache.set(cacheKey, finalResult);
-      return finalResult;
-    })();
-
-    pendingRequests.set(cacheKey, fetchTask);
-
-    try {
-      const result = await fetchTask;
-      return res.status(200).json(result);
-    } finally {
-      pendingRequests.delete(cacheKey);
     }
+
+    if (!recommendedIds || recommendedIds.length === 0) {
+      return res.status(200).json({
+        result: { status: "ok", message: "Không tìm thấy phim tương tự" },
+        data: [],
+      });
+    }
+
+    const dbResult = await db.query(
+      `SELECT 
+          m.*, 
+          m.popularity::FLOAT, 
+          m.tmdb_vote_average::FLOAT, 
+          m.avg_rating::FLOAT, 
+          COALESCE(ARRAY_AGG(g.name), '{}') AS genres
+       FROM Movies m
+       LEFT JOIN Movie_Genres mg ON m.id = mg.movie_id
+       LEFT JOIN Genres g ON mg.genre_id = g.id
+       WHERE m.id = ANY($1::int[])
+       GROUP BY m.id`,
+      [recommendedIds],
+    );
+
+    const moviesMap = new Map(
+      dbResult.rows.map((movie) => [String(movie.id), movie]),
+    );
+
+    const sortedMovies = recommendedIds
+      .map((id) => moviesMap.get(String(id)))
+      .filter((movie) => movie !== undefined);
+
+    return res.status(200).json({
+      result: { status: "ok", message: "Tải phim tương tự thành công" },
+      data: sortedMovies,
+    });
   } catch (error) {
     console.error("🔥 Lỗi controller:", error);
-    const cacheKey = `similar_movies_${req.params.movieId}`;
-    if (pendingRequests.has(cacheKey)) {
-      pendingRequests.delete(cacheKey);
-    }
     res.status(500).json({ message: "Lỗi server" });
   }
 };
