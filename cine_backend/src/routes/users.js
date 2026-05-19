@@ -4,6 +4,7 @@ const router = express.Router();
 const userController = require("../controllers/userController");
 const watchProgressController = require("../controllers/watchProgressController");
 const { protect } = require("../middleware/authMiddleware");
+const { adminOnly } = require("../middleware/adminMiddleware");
 
 /**
  * API: GET /api/users/me/watch-progress?movie_id=...
@@ -48,6 +49,39 @@ router.put("/profile", protect, userController.updateUserProfile);
  * Mô tả: Cập nhật avatar của user hiện tại (cần đăng nhập)
  */
 router.put("/avatar", protect, userController.updateUserAvatar);
+
+/**
+ * GET /api/users/admin/all
+ * Lấy danh sách tất cả người dùng
+ */
+router.get("/admin/all", protect, adminOnly, userController.getAllUsers);
+
+/**
+ * PUT /api/users/admin/:userId
+ * Cập nhật thông tin người dùng
+ */
+router.put(
+  "/admin/:userId",
+  protect,
+  adminOnly,
+  userController.adminUpdateUser,
+);
+
+/**
+ * PUT /api/users/admin/:userId/role
+ * Cập nhật role của người dùng
+ */
+router.put(
+  "/admin/:userId/role",
+  protect,
+  adminOnly,
+  userController.updateUserRole,
+);
+
+/**
+ * DELETE /api/users/admin/:userId
+ * Xóa người dùng
+router.delete("/admin/:userId", protect, adminOnly, userController.deleteUser);
 
 /**
  * API: GET /api/users/:id

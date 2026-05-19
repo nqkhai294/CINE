@@ -2,12 +2,13 @@ const db = require("../db");
 
 module.exports.getUserById = async (req, res) => {
   try {
-    const { userId } = req.params; // Dùng params thay vì body cho GET
+    const { userId } = req.params;
 
     const query = {
       text: `SELECT u.id,
                     u.username,
                     u.email,
+                    u.role,
                     up.avatar_url,
                     up.bio,
                     up.date_of_birth,
@@ -36,6 +37,7 @@ module.exports.getUserById = async (req, res) => {
         user_id: r.id,
         username: r.username,
         email: r.email,
+        role: r.role || 0,
         avatar_url: r.avatar_url || null,
         bio: r.bio ?? null,
         date_of_birth: r.date_of_birth ?? null,
@@ -153,6 +155,187 @@ module.exports.updateUserAvatar = async (req, res) => {
     });
   } catch (error) {
     console.log("Lỗi khi cập nhật avatar:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+// ADMIN MANAGEMENT APIs
+
+module.exports.getAllUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    let countQuery = `SELECT COUNT(*) FROM users WHERE username ILIKE $1 OR email ILIKE $1`;
+    let query = `
+      SELECT u.id, u.username, u.email, u.role, u.created_at,
+             up.avatar_url, up.bio, up.gender
+      FROM users u
+      LEFT JOIN user_profiles up ON u.id = up.user_id
+      WHERE u.username ILIKE $1 OR u.email ILIKE $1
+      ORDER BY u.created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const searchTerm = `%${search}%`;
+    const countResult = await db.query(countQuery, [searchTerm]);
+    const { rows } = await db.query(query, [searchTerm, limit, offset]);
+
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: {
+        users: rows,
+        total: parseInt(countResult.rows[0].count),
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách người dùng:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (role === undefined || ![0, 1].includes(parseInt(role))) {
+      return res.status(400).json({
+        message: "Role phải là 0 (User) hoặc 1 (Admin)",
+      });
+    }
+
+    const query = {
+      text: `UPDATE users SET role = $1 WHERE id = $2 RETURNING id, username, email, role`,
+      values: [parseInt(role), userId],
+    };
+
+    const { rows } = await db.query(query);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.status(200).json({
+      result: {
+        message: "Cập nhật role thành công",
+        status: "ok",
+      },
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật role:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.adminUpdateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { email, username, display_name } = req.body;
+
+    // Kiểm tra email hoặc username đã tồn tại chưa
+    if (email || username) {
+      const checkQuery = {
+        text: `SELECT id FROM users WHERE (email = $1 OR username = $2) AND id != $3`,
+        values: [email || "", username || "", userId],
+      };
+      const checkResult = await db.query(checkQuery);
+      if (checkResult.rows.length > 0) {
+        return res.status(409).json({
+          message: "Email hoặc username đã tồn tại",
+        });
+      }
+    }
+
+    const updateFields = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (email) {
+      updateFields.push(`email = $${++paramCount}`);
+      values.push(email);
+    }
+    if (username) {
+      updateFields.push(`username = $${++paramCount}`);
+      values.push(username);
+    }
+    if (display_name) {
+      updateFields.push(`display_name = $${++paramCount}`);
+      values.push(display_name);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        message: "Phải cung cấp ít nhất một trường để cập nhật",
+      });
+    }
+
+    values.push(userId);
+    const query = {
+      text: `UPDATE users SET ${updateFields.join(", ")} WHERE id = $${++paramCount} RETURNING id, username, email, display_name, role`,
+      values: values,
+    };
+
+    const { rows } = await db.query(query);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.status(200).json({
+      result: {
+        message: "Cập nhật thông tin người dùng thành công",
+        status: "ok",
+      },
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật thông tin người dùng:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (parseInt(userId) === req.user.id) {
+      return res.status(400).json({
+        message: "Không thể xóa tài khoản của chính mình",
+      });
+    }
+
+    // Kiểm tra user tồn tại
+    const checkResult = await db.query("SELECT id FROM users WHERE id = $1", [
+      userId,
+    ]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    // Xóa user_profiles
+    await db.query("DELETE FROM user_profiles WHERE user_id = $1", [userId]);
+
+    const deleteResult = await db.query(
+      "DELETE FROM users WHERE id = $1 RETURNING id, username, email",
+      [userId],
+    );
+
+    res.status(200).json({
+      result: {
+        message: "Xóa người dùng thành công",
+        status: "ok",
+      },
+      data: deleteResult.rows[0],
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa người dùng:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

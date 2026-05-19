@@ -105,8 +105,7 @@ export const Navbar = () => {
               avatar_url: profile.avatar_url ?? snapshot.avatar_url,
               bio: profile.bio ?? snapshot.bio,
               gender: profile.gender ?? snapshot.gender,
-              date_of_birth:
-                profile.date_of_birth ?? snapshot.date_of_birth,
+              date_of_birth: profile.date_of_birth ?? snapshot.date_of_birth,
             },
             token: token || "",
           }),
@@ -153,7 +152,7 @@ export const Navbar = () => {
         maxWidth="full"
         className={clsx(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          scrolled ? "bg-[#0a0e17] shadow-xl" : "!bg-transparent shadow-none"
+          scrolled ? "bg-[#0a0e17] shadow-xl" : "!bg-transparent shadow-none",
         )}
         classNames={{
           wrapper: scrolled ? "px-6 bg-[#0a0e17]" : "px-6 !bg-transparent",
@@ -275,6 +274,71 @@ export const Navbar = () => {
                 </NavbarItem>
               );
             })}
+
+            {/* Admin Management Menu - Only show for Admin users */}
+            {isAuthenticated && user?.role === 1 && (
+              <NavbarItem>
+                <Dropdown
+                  placement="bottom"
+                  classNames={{
+                    content:
+                      "bg-[#0a0e17] !border-none !outline-none shadow-xl rounded-lg",
+                    base: "!border-none",
+                  }}
+                >
+                  <DropdownTrigger>
+                    <button className="text-white/90 hover:text-white transition-colors text-sm font-normal flex items-center gap-1 bg-transparent border-none outline-none cursor-pointer p-0">
+                      Quản lý
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    aria-label="Admin Management"
+                    variant="flat"
+                    classNames={{
+                      base: "bg-[#0a0e17] !border-none shadow-xl rounded-lg overflow-hidden",
+                    }}
+                  >
+                    <DropdownItem
+                      key="manage-users"
+                      as={NextLink}
+                      href="/admin/users"
+                      className="text-sm text-white hover:text-white"
+                      classNames={{
+                        base: "data-[hover=true]:bg-gray-700/50",
+                        title: "text-white",
+                      }}
+                    >
+                      Quản lý người dùng
+                    </DropdownItem>
+                    <DropdownItem
+                      key="manage-movies"
+                      as={NextLink}
+                      href="/admin/movies"
+                      className="text-sm text-white hover:text-white"
+                      classNames={{
+                        base: "data-[hover=true]:bg-gray-700/50",
+                        title: "text-white",
+                      }}
+                    >
+                      Quản lý phim
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </NavbarItem>
+            )}
           </ul>
         </NavbarContent>
 
@@ -386,6 +450,29 @@ export const Navbar = () => {
                   </NextLink>
                 );
               })}
+
+              {/* Admin Management Menu - Mobile */}
+              {isAuthenticated && user?.role === 1 && (
+                <div className="space-y-2 border-t border-white/10 pt-2">
+                  <div className="text-white/90 text-sm font-semibold py-2 px-4">
+                    Quản lý
+                  </div>
+                  <NextLink
+                    className="text-white/80 hover:text-white hover:bg-white/10 transition-colors text-sm py-2 px-4 rounded-lg block"
+                    href="/admin/users"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Quản lý người dùng
+                  </NextLink>
+                  <NextLink
+                    className="text-white/80 hover:text-white hover:bg-white/10 transition-colors text-sm py-2 px-4 rounded-lg block"
+                    href="/admin/movies"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Quản lý phim
+                  </NextLink>
+                </div>
+              )}
             </div>
           </div>
         </div>

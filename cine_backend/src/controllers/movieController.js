@@ -407,3 +407,147 @@ module.exports.getMovieProgressingForUser = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+// ADMIN MOVIE MANAGEMENT APIs
+
+module.exports.getAllMoviesAdmin = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    let countQuery = `SELECT COUNT(*) FROM movies WHERE title ILIKE $1`;
+    let query = `
+      SELECT id, title, summary, poster_url, release_year, release_date, avg_rating, created_at
+      FROM movies
+      WHERE title ILIKE $1
+      ORDER BY release_date DESC NULLS LAST
+      LIMIT $2 OFFSET $3
+    `;
+
+    const searchTerm = `%${search}%`;
+    const countResult = await db.query(countQuery, [searchTerm]);
+    const { rows } = await db.query(query, [searchTerm, limit, offset]);
+
+    res.status(200).json({
+      result: {
+        message: "success",
+        status: "ok",
+      },
+      data: {
+        movies: rows,
+        total: parseInt(countResult.rows[0].count),
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách phim:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.updateMovieAdmin = async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const { title, summary, poster_url, trailer_url, release_year } = req.body;
+
+    const updateFields = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (title) {
+      updateFields.push(`title = $${++paramCount}`);
+      values.push(title);
+    }
+    if (summary) {
+      updateFields.push(`summary = $${++paramCount}`);
+      values.push(summary);
+    }
+    if (poster_url) {
+      updateFields.push(`poster_url = $${++paramCount}`);
+      values.push(poster_url);
+    }
+    if (trailer_url) {
+      updateFields.push(`trailer_url = $${++paramCount}`);
+      values.push(trailer_url);
+    }
+    if (release_year) {
+      updateFields.push(`release_year = $${++paramCount}`);
+      values.push(parseInt(release_year));
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        message: "Phải cung cấp ít nhất một trường để cập nhật",
+      });
+    }
+
+    values.push(movieId);
+    const query = {
+      text: `UPDATE movies SET ${updateFields.join(", ")} WHERE id = $${++paramCount} RETURNING id, title, summary, poster_url, trailer_url, release_year`,
+      values: values,
+    };
+
+    const { rows } = await db.query(query);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy phim" });
+    }
+
+    res.status(200).json({
+      result: {
+        message: "Cập nhật phim thành công",
+        status: "ok",
+      },
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật phim:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+module.exports.deleteMovieAdmin = async (req, res) => {
+  try {
+    const { movieId } = req.params;
+
+    // Kiểm tra phim tồn tại
+    const checkResult = await db.query("SELECT id FROM movies WHERE id = $1", [
+      movieId,
+    ]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy phim" });
+    }
+
+    // Xóa các liên kết phim
+    await db.query("DELETE FROM Movie_Genres WHERE movie_id = $1", [movieId]);
+    await db.query("DELETE FROM Movie_Actors WHERE movie_id = $1", [movieId]);
+    await db.query("DELETE FROM Movie_Directors WHERE movie_id = $1", [
+      movieId,
+    ]);
+    await db.query("DELETE FROM ratings WHERE movie_id = $1", [movieId]);
+    await db.query("DELETE FROM reviews WHERE movie_id = $1", [movieId]);
+    await db.query("DELETE FROM watchlist_items WHERE movie_id = $1", [
+      movieId,
+    ]);
+    await db.query("DELETE FROM user_watch_progress WHERE movie_id = $1", [
+      movieId,
+    ]);
+
+    const deleteResult = await db.query(
+      "DELETE FROM movies WHERE id = $1 RETURNING id, title",
+      [movieId],
+    );
+
+    res.status(200).json({
+      result: {
+        message: "Xóa phim thành công",
+        status: "ok",
+      },
+      data: deleteResult.rows[0],
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa phim:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

@@ -313,10 +313,7 @@ export const getSimilarUsersWatchRecommendations = async (): Promise<
     }
     return Array.isArray(res.data.data) ? res.data.data : [];
   } catch (error: any) {
-    console.error(
-      "Error fetching similar-users-watch:",
-      error.response?.data,
-    );
+    console.error("Error fetching similar-users-watch:", error.response?.data);
     return null;
   }
 };
@@ -940,5 +937,158 @@ export const upsertWatchProgress = async (
       throw new Error(error.response.data.message);
     }
     throw new Error("Network or server error occurred");
+  }
+};
+
+// ADMIN MANAGEMENT APIs
+
+export interface User {
+  id: number | string;
+  username: string;
+  email: string;
+  role: 0 | 1;
+  avatar_url?: string | null;
+  bio?: string | null;
+  gender?: string | null;
+  created_at?: string;
+}
+
+/**
+ * GET /api/users/admin/all
+ * Lấy danh sách tất cả người dùng
+ */
+export const getAllUsers = async (
+  page: number = 1,
+  limit: number = 10,
+  search: string = "",
+) => {
+  try {
+    const res = await apiClient.get("/users/admin/all", {
+      params: { page, limit, search },
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching users:", error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * PUT /api/users/admin/:userId
+ * Cập nhật thông tin người dùng
+ */
+export const updateUser = async (
+  userId: string | number,
+  data: {
+    email?: string;
+    username?: string;
+    display_name?: string;
+  },
+) => {
+  try {
+    const res = await apiClient.put(`/users/admin/${userId}`, data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error updating user:", error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * PUT /api/users/admin/:userId/role
+ * Cập nhật role của người dùng
+ */
+export const updateUserRole = async (userId: string | number, role: 0 | 1) => {
+  try {
+    const res = await apiClient.put(`/users/admin/${userId}/role`, { role });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error updating user role:", error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * DELETE /api/users/admin/:userId
+ * Xóa người dùng
+ */
+export const deleteUser = async (userId: string | number) => {
+  try {
+    const res = await apiClient.delete(`/users/admin/${userId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error deleting user:", error.response?.data);
+    throw error;
+  }
+};
+
+// ADMIN MOVIE MANAGEMENT APIs
+
+export interface MovieAdmin {
+  id: number | string;
+  title: string;
+  summary?: string;
+  poster_url?: string | null;
+  trailer_url?: string | null;
+  release_year?: number | null;
+  release_date?: string | null;
+  avg_rating?: number | null;
+  created_at?: string;
+}
+
+/**
+ * GET /api/movies/admin/all
+ * Lấy danh sách phim
+ */
+export const getAllMoviesAdmin = async (
+  page: number = 1,
+  limit: number = 10,
+  search: string = "",
+) => {
+  try {
+    const res = await apiClient.get("/movies/admin/all", {
+      params: { page, limit, search },
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error("Error fetching movies:", error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * PUT /api/movies/admin/:movieId
+ * Cập nhật thông tin phim
+ */
+export const updateMovieAdmin = async (
+  movieId: string | number,
+  data: {
+    title?: string;
+    summary?: string;
+    poster_url?: string;
+    trailer_url?: string;
+    release_year?: number;
+  },
+) => {
+  try {
+    const res = await apiClient.put(`/movies/admin/${movieId}`, data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error updating movie:", error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * DELETE /api/movies/admin/:movieId
+ * Xóa phim
+ */
+export const deleteMovieAdmin = async (movieId: string | number) => {
+  try {
+    const res = await apiClient.delete(`/movies/admin/${movieId}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error deleting movie:", error.response?.data);
+    throw error;
   }
 };

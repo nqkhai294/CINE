@@ -102,7 +102,7 @@ module.exports.login = async (req, res) => {
     });
 
     const profileRes = await db.query(
-      `SELECT u.id, u.username, u.email, up.avatar_url, up.bio, up.date_of_birth, up.gender
+      `SELECT u.id, u.username, u.email, u.role, up.avatar_url, up.bio, up.date_of_birth, up.gender
        FROM users u
        LEFT JOIN user_profiles up ON u.id = up.user_id
        WHERE u.id = $1`,
@@ -112,6 +112,7 @@ module.exports.login = async (req, res) => {
       id: user.id,
       username: user.username,
       email: user.email,
+      role: 0,
     };
 
     res.status(200).json({
@@ -122,6 +123,7 @@ module.exports.login = async (req, res) => {
           id: row.id,
           username: row.username,
           email: row.email,
+          role: row.role || 0,
           avatar_url: row.avatar_url || null,
           bio: row.bio ?? null,
           date_of_birth: row.date_of_birth ?? null,

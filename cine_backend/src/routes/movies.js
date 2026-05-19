@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect, optionalProtect } = require("../middleware/authMiddleware");
+const { adminOnly } = require("../middleware/adminMiddleware");
 
 const movieController = require("../controllers/movieController");
 const searchController = require("../controllers/searchController");
@@ -39,9 +40,37 @@ router.get("/genre/:id", movieController.getGenresRecommendationsForUser);
 router.get("/progressing", protect, movieController.getMovieProgressingForUser);
 
 /**
+ * GET /api/movies/admin/all
+ * Lấy danh sách phim
+ * Query params: page, limit, search
+ */
+router.get("/admin/all", protect, adminOnly, movieController.getAllMoviesAdmin);
+
+/**
+ * PUT /api/movies/admin/:movieId
+ * Cập nhật thông tin phim
+ */
+router.put(
+  "/admin/:movieId",
+  protect,
+  adminOnly,
+  movieController.updateMovieAdmin,
+);
+
+/**
+ * DELETE /api/movies/admin/:movieId
+ * Xóa phim
+ */
+router.delete(
+  "/admin/:movieId",
+  protect,
+  adminOnly,
+  movieController.deleteMovieAdmin,
+);
+
+/**
  * API: GET /api/movies/:id
  * Mô tả: Lấy chi tiết phim theo ID
- * LƯU Ý: Route này phải để cuối cùng vì /:id sẽ match mọi thứ
  */
 router.get("/:id", movieController.getMovieById);
 
