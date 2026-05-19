@@ -417,7 +417,7 @@ module.exports.getAllMoviesAdmin = async (req, res) => {
 
     let countQuery = `SELECT COUNT(*) FROM movies WHERE title ILIKE $1`;
     let query = `
-      SELECT id, title, summary, poster_url, release_year, release_date, avg_rating, created_at
+      SELECT id, title, summary, poster_url, trailer_url, release_year, release_date, avg_rating, created_at
       FROM movies
       WHERE title ILIKE $1
       ORDER BY release_date DESC NULLS LAST

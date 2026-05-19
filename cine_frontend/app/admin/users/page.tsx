@@ -24,6 +24,7 @@ import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
 import { Card, CardBody } from "@heroui/card";
 import { useAppSelector } from "@/store/hooks";
+import { errorToast, successToast } from "@/components/ui/toast";
 import { getAllUsers, updateUser, updateUserRole, deleteUser } from "@/api/api";
 import { IoSearch, IoClose, IoPencil, IoTrash } from "react-icons/io5";
 
@@ -79,6 +80,7 @@ export default function UsersManagementPage() {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      errorToast("Lỗi", "Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
     }
@@ -120,8 +122,10 @@ export default function UsersManagementPage() {
 
       setEditModalOpen(false);
       fetchUsers();
+      successToast("Thành công", "Đã cập nhật thông tin người dùng");
     } catch (error) {
       console.error("Error updating user:", error);
+      errorToast("Lỗi", "Không thể cập nhật người dùng");
     }
   };
 
@@ -134,6 +138,7 @@ export default function UsersManagementPage() {
       fetchUsers();
     } catch (error) {
       console.error("Error deleting user:", error);
+      errorToast("Lỗi", "Không thể xóa người dùng");
     }
   };
 
@@ -294,22 +299,19 @@ export default function UsersManagementPage() {
             <Select
               label="Vai trò"
               selectedKeys={[editForm.role.toString()]}
-              onChange={(e: any) =>
+              onSelectionChange={(keys) => {
+                const selectedKey = Array.from(keys)[0];
                 setEditForm({
                   ...editForm,
-                  role: parseInt(e.target.value) as 0 | 1,
-                })
-              }
+                  role: parseInt(String(selectedKey)) as 0 | 1,
+                });
+              }}
               classNames={{
                 trigger: "bg-white/10 border-white/20 text-white",
               }}
             >
-              <SelectItem key="0" value="0">
-                User
-              </SelectItem>
-              <SelectItem key="1" value="1">
-                Admin
-              </SelectItem>
+              <SelectItem key="0">User</SelectItem>
+              <SelectItem key="1">Admin</SelectItem>
             </Select>
           </ModalBody>
           <ModalFooter>

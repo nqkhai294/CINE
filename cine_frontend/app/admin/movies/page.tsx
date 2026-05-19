@@ -23,6 +23,7 @@ import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
 import { Card, CardBody } from "@heroui/card";
 import { useAppSelector } from "@/store/hooks";
+import { errorToast, successToast } from "@/components/ui/toast";
 import {
   getAllMoviesAdmin,
   updateMovieAdmin,
@@ -85,6 +86,7 @@ export default function MoviesManagementPage() {
       }
     } catch (error) {
       console.error("Error fetching movies:", error);
+      errorToast("Lỗi", "Không thể tải danh sách phim");
     } finally {
       setLoading(false);
     }
@@ -127,8 +129,10 @@ export default function MoviesManagementPage() {
 
       setEditModalOpen(false);
       fetchMovies();
+      successToast("Thành công", "Đã cập nhật thông tin phim");
     } catch (error) {
       console.error("Error updating movie:", error);
+      errorToast("Lỗi", "Không thể cập nhật phim");
     }
   };
 
@@ -141,6 +145,7 @@ export default function MoviesManagementPage() {
       fetchMovies();
     } catch (error) {
       console.error("Error deleting movie:", error);
+      errorToast("Lỗi", "Không thể xóa phim");
     }
   };
 
