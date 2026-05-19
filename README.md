@@ -58,3 +58,5 @@ docker compose -f docker-compose.prod.yml logs -f
 ```bash
 docker compose -f docker-compose.prod.yml down
 ```
+
+## Truy cập localhost:3000 để trải nghiệm
