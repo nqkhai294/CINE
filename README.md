@@ -22,6 +22,7 @@ Tạo file `.env.production` trong 3 thư mục `cine_frontend`, `cine_backend`,
 <Để có kết quả chạy thuận lợi nhất, truy cập `https://drive.google.com/drive/folders/1fp_SaMCidTm0lsTsL2w_PbLzVuAU7AZU` để lấy file .env chuẩn>
 
 ## 3. Chạy bằng Docker Desktop
+Tải và cài đặt Docker Desktop trên máy.
 
 Repo đã có sẵn cấu hình Docker cho cả 3 service ở root:
 
